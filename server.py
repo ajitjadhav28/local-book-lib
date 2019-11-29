@@ -3,8 +3,10 @@ import sqlite3
 from index import SqliteConn, SQL_DB_NAME
 import base64
 import os
+from flask_cors import CORS
 
 app = Flask(__name__, template_folder=os.path.abspath('./build'), static_folder=os.path.abspath('./build/static'))
+cors = CORS(app)
 
 search_query = "select url from books_virtual where books_virtual match '{}' order by rank;"
 
@@ -64,4 +66,4 @@ def search_limit(search, limit):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run( host="127.0.0.28", port=9999, debug=True)

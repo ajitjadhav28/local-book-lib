@@ -1,5 +1,12 @@
 import React from 'react';
-import { prependToMemberExpression } from '@babel/types';
+import searchLogo from './search.png'
+
+function SeachFavicon(props){
+  props = props.props
+  return(
+    <img style={{'width': props.width, 'height': props.height, 'verticalAlign': 'top'}} src={searchLogo}></img>
+  )
+}
 
 class SearchForm extends React.Component {
   constructor(props) {
@@ -24,7 +31,7 @@ class SearchForm extends React.Component {
       typing: false,
       typingTimeout: setTimeout(() => {
         this.props.callback(this.state.value, false)
-      }, 1000)
+      }, 200)
     })
   }
 
@@ -37,7 +44,8 @@ class SearchForm extends React.Component {
   render() {
     return (
       <form className="search-form" onSubmit={this.handleSubmit}>
-          <input className="search-input" type="text" value={this.state.value} onChange={this.handleChange} />
+          {/* <SeachFavicon props={{'height':35, 'width':35}} /> */}
+          <input className="search-input" placeholder="   Search Books" type="text" value={this.state.value} onChange={this.handleChange} />
       </form>
     );
   }

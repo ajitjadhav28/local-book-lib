@@ -1,11 +1,10 @@
 .App {
-  background-color: #282c34;
   color: aliceblue;
   font-family: monospace;
 }
 
 body{
-  background-color: #282c34;
+  background-color: black;
 }
 
 .App-logo {
@@ -25,6 +24,15 @@ body{
 
 .App-link {
   color: #09d3ac;
+  font-family: monospace;
+}
+
+a:hover{
+  color: aqua;
+}
+
+a:visited{
+  color: darkolivegreen;
 }
 
 .book-wraper{
@@ -37,12 +45,28 @@ body{
   /* max-width: 1024px; */
 }
 
-.book-card{
-  width: 550px;
-  height: 200px;
-  margin-top: 10px;
-  /* flex: initial; */
-  /* justify-content: space-between; */
+.book-card {
+	width: 550px;
+	height: 200px;
+	margin-top: 5px;
+	border: 1px white solid;
+	padding: 5px;
+	border-radius: 10px;
+  margin-left: 5px;
+  animation-duration: 2s;
+  animation-name: card_animation;
+  overflow: hidden;
+}
+
+@keyframes card_animation {
+  from {
+    margin-top: 100px;
+    opacity: 0;
+  }
+  to {
+    margin-top: 5px;
+    opacity: 1;
+  }
 }
 
 .book-card-img{
@@ -53,23 +77,28 @@ body{
 }
 
 .book-link-pdf{
-  margin-left: 10px;
+  margin-left: 5px;
 }
 
 .book-link-epub{
-  margin-left: 10px;
+  margin-left: 5px;
 }
 
 .book-card-img-tag{
   height: 200px;
 }
 
-.book-card-details{
-  
+.book-card-misc{
+  text-align: right;
+}
+
+.book-card-misc span{
+  color: cadetblue;
 }
 
 .book-card-tite{
   font-weight: 600;
+  height: 35px;
 }
 
 .card-span-title{
@@ -87,10 +116,33 @@ body{
   text-align: justify;
   text-justify: inter-word;
   padding-right: 5px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  height: 125px;
+  overflow: hidden;
+  position: relative;
+}
+.book-desc-span{
+  height: 125px;
+  position: absolute;
+  max-width: 383px;
+}
+
+.book-desc-span:hover{
+  animation: scrollUp 15s 5s linear;
+}
+
+@keyframes scrollUp {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-100%);
+  }
 }
 
 .book-card-download{
-  text-align: left;
+  text-align: right;
   padding-top: 5px;
 }
 
@@ -108,7 +160,15 @@ body{
   justify-content: center;
 }
 
-.search-input {
-  min-width: 400px;
-  max-width: 600px;
-}
+  .search-input {
+    min-width: 400px;
+    max-width: 600px;
+    background-color: #000;
+    color: #fff;
+    height: 25px;
+    font-size: 18px;
+    border-radius: 15px;
+    border: 1px white solid;
+    padding-left: 10px;
+    padding-right: 10px;
+  }

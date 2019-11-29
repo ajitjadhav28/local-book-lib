@@ -4,6 +4,8 @@ import { randomBytes } from 'crypto';
 import axios from 'axios'
 import BookCard from './Card'
 
+let ProxyServer = "http://127.0.0.28:9999"
+
 class HomePage extends React.Component
 {
     constructor(props){
@@ -13,13 +15,12 @@ class HomePage extends React.Component
             initialBooks: false,
             search: ''
         }
-
         this.handleSearchCallback = this.handleSearchCallback.bind(this)
     }
 
     componentDidMount(){
         let search = "/programming OR operating system OR algorithm OR Data Structures OR science/30"
-        axios.post(search).then(
+        axios.post(ProxyServer+search).then(
             (response) => {
                 this.setState({
                     books: response.data,
@@ -33,7 +34,7 @@ class HomePage extends React.Component
         if(search_text.length > 0){
           this.setState({search: search_text})
         if(submit){
-            axios.post("/"+search_text).then(
+            axios.post(ProxyServer+"/"+search_text).then(
                 (response) => {
                     this.setState({
                         books: response.data ? response.data : []
@@ -41,7 +42,7 @@ class HomePage extends React.Component
                 }
             )
         }else {
-          axios.post("/"+search_text+"/"+ 20).then(
+          axios.post(ProxyServer+"/"+search_text+"/"+ 6).then(
             (response) => {
                 this.setState({
                     books: response.data ? response.data : []
