@@ -1,0 +1,114 @@
+.App {
+  background-color: #282c34;
+  color: aliceblue;
+  font-family: monospace;
+}
+
+body{
+  background-color: #282c34;
+}
+
+.App-logo {
+  height: 40vmin;
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #09d3ac;
+}
+
+.book-wraper{
+  margin: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  flex: content;
+  justify-content: center;
+  text-align: center;
+  /* max-width: 1024px; */
+}
+
+.book-card{
+  width: 550px;
+  height: 200px;
+  margin-top: 10px;
+  /* flex: initial; */
+  /* justify-content: space-between; */
+}
+
+.book-card-img{
+  text-align: left;
+  float: left;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+.book-link-pdf{
+  margin-left: 10px;
+}
+
+.book-link-epub{
+  margin-left: 10px;
+}
+
+.book-card-img-tag{
+  height: 200px;
+}
+
+.book-card-details{
+  
+}
+
+.book-card-tite{
+  font-weight: 600;
+}
+
+.card-span-title{
+  font-family: monospace;
+  font-size: large;
+}
+
+.book-card-subtitle{
+  font-size: small;
+  font-weight: 600;
+}
+
+.book-card-description{
+  font-size: medium;
+  text-align: justify;
+  text-justify: inter-word;
+  padding-right: 5px;
+}
+
+.book-card-download{
+  text-align: left;
+  padding-top: 5px;
+}
+
+.search-wraper{
+  display: inline-block;
+  text-align: center;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.search-form {
+  width: 100%;
+  display: inline-block;
+  justify-content: center;
+}
+
+.search-input {
+  min-width: 400px;
+  max-width: 600px;
+}
