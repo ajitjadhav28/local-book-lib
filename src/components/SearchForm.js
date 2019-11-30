@@ -1,12 +1,4 @@
 import React from 'react';
-import searchLogo from './search.png'
-
-function SeachFavicon(props){
-  props = props.props
-  return(
-    <img style={{'width': props.width, 'height': props.height, 'verticalAlign': 'top'}} src={searchLogo}></img>
-  )
-}
 
 class SearchForm extends React.Component {
   constructor(props) {
@@ -44,7 +36,6 @@ class SearchForm extends React.Component {
   render() {
     return (
       <form className="search-form" onSubmit={this.handleSubmit}>
-          {/* <SeachFavicon props={{'height':35, 'width':35}} /> */}
           <input className="search-input" placeholder="   Search Books" type="text" value={this.state.value} onChange={this.handleChange} />
       </form>
     );

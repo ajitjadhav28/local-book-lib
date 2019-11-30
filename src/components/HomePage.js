@@ -1,6 +1,5 @@
 import React from 'react'
 import SearchForm from './SearchForm'
-import { randomBytes } from 'crypto';
 import axios from 'axios'
 import BookCard from './Card'
 
@@ -68,7 +67,10 @@ class HomePage extends React.Component
                 <div className="book-wraper" >
                     {
                         this.state.books.map(book =>
-                            <BookCard key={ randomBytes(10) } props={{...book}} />
+                            <BookCard
+                                key={book.isbn == true ? book.isbn : book.url.substring(27, book.url.length)}
+                                props={{...book}}
+                            />
                         )
                     }
                 </div>

@@ -4,53 +4,60 @@ import html5lib
 from usp.tree import sitemap_tree_for_homepage
 import sqlite3
 from multiprocessing import pool
-import json
 from random import randint
 from time import sleep
 from user_agents import user_agents, referer
 import re
 import humanfriendly
+import base64
+import random
+import string
+import argparse
+import os
 
 BASE_URL = "http://www.allitebooks.org/sitemap.xml"
 SQL_DB_NAME = "allitebooks.sql"
 
 POSTS_CREATE_TABLE_SQL = """ CREATE TABLE IF NOT EXISTS posts(
-                        id integer PRIMARY KEY,
-                        url text NOT NULL UNIQUE,
-                        last_modified text NOT NULL
+                        id INTEGER PRIMARY KEY,
+                        url TEXT NOT NULL UNIQUE,
+                        last_modified TEXT NOT NULL
                         );
                     """
 
 POSTS_INSERT_FORMAT = "INSERT INTO posts(url, last_modified) VALUES(?,?)"
 
 BOOKS_CREATE_TABLE = """ CREATE TABLE IF NOT EXISTS books(
-                        id integer PRIMARY KEY,
-                        title text,
-                        sub_title text,
-                        author text,
-                        category text,
-                        description text,
-                        isbn text UNIQUE,
-                        year text,
-                        pages integer,
-                        language text,
-                        format text,
-                        url text NOT NULL UNIQUE,
-                        epub_url text,
-                        epub_size integer,
-                        pdf_url text,
-                        pdf_size integer,
-                        other_url text,
-                        other_size integer,
-                        image_url text,
+                        id INTEGER PRIMARY KEY,
+                        title TEXT,
+                        sub_title TEXT,
+                        author TEXT,
+                        category TEXT,
+                        description TEXT,
+                        isbn TEXT NOT NULL UNIQUE,
+                        year TEXT,
+                        pages INTEGER,
+                        language TEXT,
+                        format TEXT,
+                        url TEXT NOT NULL UNIQUE,
+                        epub_url TEXT,
+                        epub_size INTEGER,
+                        pdf_url TEXT,
+                        pdf_size INTEGER,
+                        other_url TEXT,
+                        other_size INTEGER,
+                        image_url TEXT,
                         image BLOB
                         );
                     """
 
-BOOKS_INSERT_FORMAT = """INSERT INTO books(title,sub_title,author,category,description,isbn,year,pages,language,format,url,
-epub_url,epub_size,pdf_url,pdf_size,other_url,other_size,image_url) VALUES("{title}","{sub_title}","{author}","{category}","{description}",
-"{isbn}","{year}","{pages}","{language}","{format}","{url}","{epub_url}","{epub_size}","{pdf_url}","{pdf_size}",
-"{other_url}","{other_size}","{image_url}") """
+BOOKS_CREATE_VIRTUAL_TABLE = "CREATE VIRTUAL TABLE IF NOT EXISTS books_search USING FTS5(title, sub_title, author, " \
+                             "category, description, year, format, url); "
+
+BOOKS_INSERT_FORMAT = """INSERT INTO books(title,sub_title,author,category,description,isbn,year,pages,language,
+format,url, epub_url,epub_size,pdf_url,pdf_size,other_url,other_size,image_url) VALUES("{title}","{sub_title}",
+"{author}","{category}","{description}", "{isbn}","{year}","{pages}","{language}","{format}","{url}","{epub_url}",
+"{epub_size}","{pdf_url}","{pdf_size}", "{other_url}","{other_size}","{image_url}") """
 
 BOOKS_VIRT_INSRT_FRMT = """INSERT INTO books(title,sub_title,author,category,description,year,format,url)
 VALUES("{title}","{sub_title}","{author}","{category}","{description}","{year}","{format}","{url}") """
@@ -105,7 +112,6 @@ def _get_random_header():
 
 
 def get_book_details(url: str):
-
     r = None
     delay = randint(0, 2)
     sleep(delay)
@@ -201,10 +207,13 @@ def get_book_details(url: str):
 
 def _insert_post(db: SqliteConn, url: str, last_modified):
     try:
+        db.conn.execute('BEGIN')
         db.conn.execute(POSTS_INSERT_FORMAT, (url, last_modified))
     except Exception as e:
         print(e, "$2")
+        db.conn.execute('ROLLBACK')
         return False
+    db.conn.commit()
     return True
 
 
@@ -219,6 +228,8 @@ def backup():
     db = SqliteConn(SQL_DB_NAME)
     db.conn.execute(BOOKS_CREATE_TABLE)
     db.conn.execute(POSTS_CREATE_TABLE_SQL)
+    db.conn.execute(BOOKS_CREATE_VIRTUAL_TABLE)
+    db.conn.commit()
     all_book_pages = set([])
     all_post_pages = set([])
     tree = sitemap_tree_for_homepage("http://www.allitebooks.org/sitemap.xml")
@@ -226,7 +237,7 @@ def backup():
     for page in tree.all_pages():
         if page.url.find("/author/") < 0 \
                 and page.url.find("/tagtagtag/") < 0 \
-                and page.url.find("/?") < 0\
+                and page.url.find("/?") < 0 \
                 and url_check.match(page.url) is None:
             cur = db.conn.execute("SELECT COUNT(*) from posts where url='{}';".format(page.url))
             dt = cur.fetchone()
@@ -242,17 +253,17 @@ def backup():
     BookWorker = pool.Pool(processes=10)
     book_data = BookWorker.map(get_book_details, list(all_book_pages))
 
-    try:
-        with open("books.json", 'r+') as file:
-            old_data = []
-            try:
-                old_data = json.loads(file.read())
-            except Exception as e:
-                print(e)
-            old_data.extend(book_data)
-            file.write(json.dumps(old_data))
-    except Exception as e:
-        print("Error in saving json data: ", e)
+    # try:
+    #     with open("books.json", 'r+') as file:
+    #         old_data = []
+    #         try:
+    #             old_data = json.loads(file.read())
+    #         except Exception as e:
+    #             print(e)
+    #         old_data.extend(book_data)
+    #         file.write(json.dumps(old_data))
+    # except Exception as e:
+    #     print("Error in saving json data: ", e)
 
     # try:
     #     with open("books.json", 'r') as file:
@@ -260,82 +271,111 @@ def backup():
     # except Exception as e:
     #     print(e)
 
+    books_updated = 0
+    total_books = len(book_data)
+    print("Found ", total_books, " books.")
+    print("Updating new books.")
     for book in book_data:
         if book is not None:
             try:
                 print('Trying book: ', book['url'])
+                db.conn.execute('BEGIN')
                 db.conn.execute(BOOKS_INSERT_FORMAT.format(**book))
-            except Exception as e:
-                print(e, ", url=", book['url'])
-            try:
                 db.conn.execute(BOOKS_VIRT_INSRT_FRMT.format(**book))
             except Exception as e:
-                print('Virtual table update error', e, book['url'])
+                print(e, ", url=", book['url'])
+                db.conn.execute('ROLLBACK')
+                continue
+            books_updated += 1
             db.conn.commit()
         sleep(0.001)
+    print("Updated database with ", books_updated, " new books.")
 
 
-def _update_images():
+def _update_image(db, image_url: str):
+    try:
+        image_request = requests.get(image_url, headers=_get_random_header(), timeout=(5, 15))
+        db.execute('BEGIN')
+        db.execute('UPDATE books SET image=? WHERE image_url=?', (base64.encodebytes(image_request.content), image_url))
+    except Exception as e:
+        print("ERROR while updating image for: ", image_url)
+        db.execute('ROLLBACK')
+        return False
+    db.commit()
+    print("Image Updated: ", image_url)
+    return True
+
+
+def update_images():
     db = sqlite3.connect(SQL_DB_NAME)
     images = None
     try:
         images = db.execute('SELECT image_url FROM books WHERE image_url IS NOT "None" and image isnull;')
     except Exception as e:
-        print("Can't fetch image url data from database.")
-        print(e)
+        print("Can't fetch image url data from database.", e)
         return
-
+    i = 1
     for image in images.fetchall():
-        try:
-            image_request = requests.get(image[0], headers=_get_random_header(), timeout=(5, 15))
-            db.execute('UPDATE books SET image=? WHERE image_url=?', (image_request.content, image[0]))
-        except Exception as e:
-            print("ERROR while updating image for: ", image)
-            continue
-        print("Image updated: ", image[0])
-        db.commit()
+        if _update_image(db, image[0]):
+            i += 1
+    print("Total images updated: ", i)
     db.close()
 
 
-def _format_size_oldjson():
-    """Convert old human readable size to bytes of json"""
+def _random_str(n: int):
+    r = ''.join(random.choices(string.ascii_uppercase + string.ascii_lowercase, k=n))
+    return r
 
-    def update_books(book_data= []):
 
-        db_conection = SqliteConn('allitebooks.db')
-        for book in book_data:
-            if book is not None:
-                try:
-                    print('Trying book: ', book['url'])
-                    db_conection.conn.execute(BOOKS_INSERT_FORMAT.format(**book))
-                except Exception as e:
-                    print(e, ", url=", book['url'])
-                db_conection.conn.commit()
-            sleep(0.001)
+def _update_null_url_books():
+    check_updated = lambda bk: bk['pdf_url'] is not None \
+                               or bk['epub_url'] is not None \
+                               or bk['other_url'] is not None
 
-    new = []
-    with open("books.json", 'r') as file:
-        old = json.loads(file.read())
-        for book in old:
-            if book is not None:
-                try:
-                    book['pdf_size'] = humanfriendly.parse_size(book['pdf_size'])
-                except Exception as e:
-                    book['pdf_size'] = 0
-                try:
-                    book['epub_size'] = humanfriendly.parse_size(book['epub_size'])
-                except Exception as e:
-                    book['epub_size'] = 0
-                try:
-                    book['other_size'] = humanfriendly.parse_size(book['other_size'])
-                except Exception as e:
-                    book['other_size'] = 0
-                new.append(book)
-    with open("books.json", 'w') as file:
-        file.write(json.dumps(new))
-
-    update_books(new)
+    db = sqlite3.connect(SQL_DB_NAME)
+    urls = db.execute("SELECT url FROM books WHERE pdf_url ISNULL AND epub_url ISNULL AND other_url ISNULL;")
+    for url in urls.fetchall():
+        new_book = get_book_details(url[0])
+        if check_updated(new_book):
+            if new_book['isbn'] is None:
+                new_book['isbn'] = _random_str(10)
+            try:
+                print("Updating book", new_book['url'])
+                db.execute('BEGIN')
+                db.execute('DELETE FROM books WHERE url="{}"'.format(url[0]))
+                db.execute('DELETE FROM books_virtual WHERE url="{}"'.format(url[0]))
+                db.execute(BOOKS_INSERT_FORMAT.format(**new_book))
+                db.execute(BOOKS_VIRT_INSRT_FRMT.format(**new_book))
+            except Exception as e:
+                print('Error while updating new book.', url[0])
+                unique_isbn = re.compile('^UNIQUE.*books.isbn$')
+                print(e)
+                db.execute("ROLLBACK")
+                if unique_isbn.match(str(e)) is not None:
+                    print('Removing duplicate book')
+                    db.execute('DELETE FROM books WHERE url="{}"'.format(url[0]))
+                    db.commit()
+                continue
+            db.commit()
+            _update_image(db, url[0])
+    db.close()
 
 
 if __name__ == "__main__":
-    backup()
+    parser = argparse.ArgumentParser(description="This program collect data from website 'allitebooks.org'. It creates "
+                                                 "local copy to search and download books faster. If you want "
+                                                 "lightweight database then don't update images in database. For "
+                                                 "first run it may take good amount of time be patient.")
+    parser.add_argument("action", help="Specify action: db_update, img_update")
+    args = parser.parse_args()
+    if args.action == 'db_update':
+        print('Updating database. This may take time.')
+        print('Starting website scraping..')
+        backup()
+    elif args.action == 'img_update':
+        if not os.path.exists(SQL_DB_NAME):
+            print("Database does not exists. Please create database first using 'db_update' argument.")
+            exit(1)
+        else:
+            print('Downloading images into database.')
+            update_images()

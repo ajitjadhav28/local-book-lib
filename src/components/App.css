@@ -49,11 +49,11 @@ a:visited{
 	width: 550px;
 	height: 200px;
 	margin-top: 5px;
-	border: 1px white solid;
+	border: 1px gray solid;
 	padding: 5px;
 	border-radius: 10px;
   margin-left: 5px;
-  animation-duration: 2s;
+  animation-duration: 1s;
   animation-name: card_animation;
   overflow: hidden;
 }
@@ -121,15 +121,20 @@ a:visited{
   height: 125px;
   overflow: hidden;
   position: relative;
+  color: grey;
+  max-width: 520px;
 }
 .book-desc-span{
   height: 125px;
   position: absolute;
-  max-width: 383px;
+  min-width: 300px;
 }
 
 .book-desc-span:hover{
-  animation: scrollUp 15s 5s linear;
+  font-size: larger;
+  font-weight: 100;
+  color: lightgray;
+  animation: scrollUp 25s 5s linear;
 }
 
 @keyframes scrollUp {
@@ -137,7 +142,7 @@ a:visited{
     transform: translateY(0);
   }
   to {
-    transform: translateY(-100%);
+    transform: translateY(-110%);
   }
 }
 
