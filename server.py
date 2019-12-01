@@ -62,4 +62,4 @@ if __name__ == "__main__":
     if not (os.path.exists(SQL_DB_NAME)):
         print('Database not found. Please create database with "python3 db_update.py db_update".')
         exit(1)
-    app.run(host="127.0.0.28", port=9999, debug=True)
+    app.run(host="127.0.0.28", port=9999, debug=False)
