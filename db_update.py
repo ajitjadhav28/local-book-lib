@@ -1,19 +1,11 @@
-import requests
+import requests, html5lib, sqlite3
 from bs4 import BeautifulSoup
-import html5lib
 from usp.tree import sitemap_tree_for_homepage
-import sqlite3
 from multiprocessing import pool
 from random import randint
 from time import sleep
 from user_agents import user_agents, referer
-import re
-import humanfriendly
-import base64
-import random
-import string
-import argparse
-import os
+import re, humanfriendly, base64, random, string, argparse, os, json
 
 BASE_URL = "http://www.allitebooks.org/sitemap.xml"
 SQL_DB_NAME = "allitebooks.sql"
@@ -51,15 +43,15 @@ BOOKS_CREATE_TABLE = """ CREATE TABLE IF NOT EXISTS books(
                         );
                     """
 
-BOOKS_CREATE_VIRTUAL_TABLE = "CREATE VIRTUAL TABLE IF NOT EXISTS books_search USING FTS5(title, sub_title, author, " \
-                             "category, description, year, format, url); "
-
 BOOKS_INSERT_FORMAT = """INSERT INTO books(title,sub_title,author,category,description,isbn,year,pages,language,
 format,url, epub_url,epub_size,pdf_url,pdf_size,other_url,other_size,image_url) VALUES("{title}","{sub_title}",
 "{author}","{category}","{description}", "{isbn}","{year}","{pages}","{language}","{format}","{url}","{epub_url}",
 "{epub_size}","{pdf_url}","{pdf_size}", "{other_url}","{other_size}","{image_url}") """
 
-BOOKS_VIRT_INSRT_FRMT = """INSERT INTO books(title,sub_title,author,category,description,year,format,url)
+BOOKS_CREATE_VIRTUAL_TABLE = "CREATE VIRTUAL TABLE IF NOT EXISTS books_virtual USING FTS5(title, sub_title, author, " \
+                             "category, description, year, format, url); "
+
+BOOKS_VIRT_INSRT_FRMT = """INSERT INTO books_virtual(title,sub_title,author,category,description,year,format,url)
 VALUES("{title}","{sub_title}","{author}","{category}","{description}","{year}","{format}","{url}") """
 
 
@@ -178,8 +170,11 @@ def get_book_details(url: str):
     for dt in down_data:
         if dt.a['href'].find('.pdf') > 0:
             book_details['pdf_url'] = dt.a['href']
+            sz = dt.a.span.text.strip('()')
+            if sz.find(',') > -1:
+                sz = sz.replace(',', '.')
             try:
-                book_details['pdf_size'] = humanfriendly.parse_size(dt.a.span.text.strip('()'))
+                book_details['pdf_size'] = humanfriendly.parse_size(sz)
             except Exception as e:
                 print(e)
 
@@ -247,9 +242,6 @@ def backup():
 
     insert_posts(db, all_post_pages)
 
-    # cur = db.conn.execute("SELECT url from posts;")
-    # all_book_pages = [url[0] for url in list(cur.fetchall())]
-
     BookWorker = pool.Pool(processes=10)
     book_data = BookWorker.map(get_book_details, list(all_book_pages))
 
@@ -293,10 +285,11 @@ def backup():
 
 
 def _update_image(db, image_url: str):
+    _base64_string = lambda raw_byte : base64.encodebytes(raw_byte).decode('utf-8')
     try:
         image_request = requests.get(image_url, headers=_get_random_header(), timeout=(5, 15))
         db.execute('BEGIN')
-        db.execute('UPDATE books SET image=? WHERE image_url=?', (base64.encodebytes(image_request.content), image_url))
+        db.execute('UPDATE books SET image=? WHERE image_url=?', (_base64_string(image_request.content), image_url))
     except Exception as e:
         print("ERROR while updating image for: ", image_url)
         db.execute('ROLLBACK')
@@ -359,7 +352,6 @@ def _update_null_url_books():
             db.commit()
             _update_image(db, url[0])
     db.close()
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="This program collect data from website 'allitebooks.org'. It creates "
