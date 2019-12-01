@@ -227,13 +227,13 @@ def backup():
     db.conn.commit()
     all_book_pages = set([])
     all_post_pages = set([])
-    tree = sitemap_tree_for_homepage("http://www.allitebooks.org/sitemap.xml")
-    url_check = re.compile("http?://.*/.*/.*/.*")
+    tree = sitemap_tree_for_homepage(BASE_URL)
+    url_check = re.compile("^http?://.*/.*/$")
     for page in tree.all_pages():
         if page.url.find("/author/") < 0 \
                 and page.url.find("/tagtagtag/") < 0 \
                 and page.url.find("/?") < 0 \
-                and url_check.match(page.url) is None:
+                and url_check.match(page.url) is not None:
             cur = db.conn.execute("SELECT COUNT(*) from posts where url='{}';".format(page.url))
             dt = cur.fetchone()
             if dt[0] == 0:

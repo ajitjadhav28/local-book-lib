@@ -22,18 +22,20 @@ def searc_database(query, format_query):
         conn = SqliteConn(SQL_DB_NAME)
         results = conn.conn.execute(format_query.format(query))
     except Exception as e:
-        print(e)
+        print('$1', e)
         return []
     books = []
     conn.conn.row_factory = _dict_factory
     urls = "("
     for url in results.fetchall():
         urls += '"' + str(url[0]) + '",'
-    urls = urls[0:-1]+")"
+    if urls[-1] == ',':
+        urls = urls[0:-1]
+    urls += ")"
     try:
         books = conn.conn.execute(book_query.format(urls)).fetchall()
     except Exception as e:
-        print(e)
+        print('$2', e)
     return books
 
 
