@@ -102,6 +102,28 @@ def _get_random_header():
     }
     return headers
 
+def _fetch_only_sitemap(db: SqliteConn):
+    r = requests.get(BASE_URL, headers=_get_random_header())
+    interested_posts = re.compile('^http?://www.allitebooks.org/post-sitemap[0-9]+.xml$')
+    soup = BeautifulSoup(r.content, "lxml")
+    all_url = soup.find_all('loc')
+    all_posts = []
+    for url in all_url:
+        if interested_posts.match(url.text):
+            all_posts.append(url.text)
+    all_books = []
+    for post in all_posts:
+        br = requests.get(post, headers=_get_random_header())
+        bsoup = BeautifulSoup(br.content, "lxml")
+        bkurls = bsoup.findAll('loc')
+        all_books.extend([burl.text for burl in bkurls])
+    new_books = []
+    for book in all_books:
+        cur = db.conn.execute("SELECT COUNT(*) from books where url='{}';".format(book))
+        dt = cur.fetchone()
+        if dt[0] == 0:
+            new_books.append(book)
+    return new_books
 
 def get_book_details(url: str):
     r = None
@@ -218,13 +240,7 @@ def insert_posts(db: SqliteConn, data: set):
         _insert_post(db, url, last_mod)
     db.conn.commit()
 
-
-def backup():
-    db = SqliteConn(SQL_DB_NAME)
-    db.conn.execute(BOOKS_CREATE_TABLE)
-    db.conn.execute(POSTS_CREATE_TABLE_SQL)
-    db.conn.execute(BOOKS_CREATE_VIRTUAL_TABLE)
-    db.conn.commit()
+def _scrapping_website(db: SqliteConn):
     all_book_pages = set([])
     all_post_pages = set([])
     tree = sitemap_tree_for_homepage(BASE_URL)
@@ -239,8 +255,21 @@ def backup():
             if dt[0] == 0:
                 all_book_pages.add(str(page.url))
                 all_post_pages.add(str(page.url) + '#$#' + str(page.last_modified))
+    return(all_book_pages, all_post_pages)
 
-    insert_posts(db, all_post_pages)
+def backup(scraping_sitemap:bool = True):
+    db = SqliteConn(SQL_DB_NAME)
+    db.conn.execute(BOOKS_CREATE_TABLE)
+    db.conn.execute(POSTS_CREATE_TABLE_SQL)
+    db.conn.execute(BOOKS_CREATE_VIRTUAL_TABLE)
+    db.conn.commit()
+    all_post_pages = []
+    all_book_pages = []
+    if scraping_sitemap:
+        all_book_pages = all_post_pages = _fetch_only_sitemap(db)
+    else:
+        all_book_pages, all_post_pages = _scrapping_website(db)
+        insert_posts(db, all_post_pages)
 
     BookWorker = pool.Pool(processes=10)
     book_data = BookWorker.map(get_book_details, list(all_book_pages))
@@ -359,11 +388,12 @@ if __name__ == "__main__":
                                                  "lightweight database then don't update images in database. For "
                                                  "first run it may take good amount of time be patient.")
     parser.add_argument("action", help="Specify action: db_update, img_update")
+    parser.add_argument("-w", "--website", action="store_true", help="Scraps whole website sitemap instead of just book. It may take extra time.")
     args = parser.parse_args()
     if args.action == 'db_update':
         print('Updating database. This may take time.')
         print('Starting website scraping..')
-        backup()
+        backup(not args.website)
     elif args.action == 'img_update':
         if not os.path.exists(SQL_DB_NAME):
             print("Database does not exists. Please create database first using 'db_update' argument.")
