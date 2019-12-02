@@ -44,18 +44,79 @@ a:visited{
   text-align: center;
   /* max-width: 1024px; */
 }
+@media only screen and (min-width:320px){
+  .book-card {
+    width: 95%;
+    height: 45%;
+    margin-top: 5px;
+    border: 1px gray solid;
+    padding: 5px;
+    border-radius: 10px;
+    margin-left: 5px;
+    animation-duration: 1s;
+    animation-name: card_animation;
+    overflow: hidden;
+  }
+  .book-card-description{
+    font-size: medium;
+    text-align: justify;
+    text-justify: inter-word;
+    padding-right: 5px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    min-height: 150px;
+    max-height: 180px;
+    overflow: hidden;
+    position: relative;
+    color: grey;
+    max-width: 520px;
+  }
+  .book-desc-span{
+    height: 180px;
+    position: absolute;
+    /* min-width: 300px; */
+  }
+  .book-card-tite{
+    font-weight: 600;
+    /* height: 35px; */
+  }
+}
 
-.book-card {
-	width: 550px;
-	height: 200px;
-	margin-top: 5px;
-	border: 1px gray solid;
-	padding: 5px;
-	border-radius: 10px;
-  margin-left: 5px;
-  animation-duration: 1s;
-  animation-name: card_animation;
-  overflow: hidden;
+@media only screen and (min-width:600px){
+  .book-card {
+    width: 550px;
+    height: 200px;
+    margin-top: 5px;
+    border: 1px gray solid;
+    padding: 5px;
+    border-radius: 10px;
+    margin-left: 5px;
+    animation-duration: 1.5s;
+    animation-name: card_animation;
+    overflow: hidden;
+  }
+  .book-card-description{
+    font-size: medium;
+    text-align: justify;
+    text-justify: inter-word;
+    padding-right: 5px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    height: 125px;
+    overflow: hidden;
+    position: relative;
+    color: grey;
+    max-width: 520px;
+  }
+  .book-desc-span{
+    height: 125px;
+    position: absolute;
+    min-width: 300px;
+  }
+  .book-card-tite{
+    font-weight: 600;
+    height: 35px;
+  }
 }
 
 @keyframes card_animation {
@@ -96,11 +157,6 @@ a:visited{
   color: cadetblue;
 }
 
-.book-card-tite{
-  font-weight: 600;
-  height: 35px;
-}
-
 .card-span-title{
   font-family: monospace;
   font-size: large;
@@ -109,25 +165,6 @@ a:visited{
 .book-card-subtitle{
   font-size: small;
   font-weight: 600;
-}
-
-.book-card-description{
-  font-size: medium;
-  text-align: justify;
-  text-justify: inter-word;
-  padding-right: 5px;
-  padding-top: 2px;
-  padding-bottom: 2px;
-  height: 125px;
-  overflow: hidden;
-  position: relative;
-  color: grey;
-  max-width: 520px;
-}
-.book-desc-span{
-  height: 125px;
-  position: absolute;
-  min-width: 300px;
 }
 
 .book-desc-span:hover{

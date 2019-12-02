@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request, render_template
 from db_update import SqliteConn, SQL_DB_NAME
-import os, functools
+import os, functools, argparse
 from flask_cors import CORS
 
 app = Flask(__name__, template_folder=os.path.abspath('./build'), static_folder=os.path.abspath('./build/static'))
@@ -66,4 +66,9 @@ if __name__ == "__main__":
     if not (os.path.exists(SQL_DB_NAME)):
         print('Database not found. Please create database with "python3 db_update.py db_update".')
         exit(1)
-    app.run(host="127.0.0.28", port=9999, debug=False)
+    parser = argparse.ArgumentParser(description="Local Book library server", prog="server.py")
+    parser.add_argument('-d', '--debug', action="store_true", help="Start server in debug mode")
+    parser.add_argument('-i', '--host', type=str, default="127.0.0.28", help="specify server ip")
+    parser.add_argument('-p', '--port', type=int, default=9999, help="port number for server")
+    args = parser.parse_args()
+    app.run(host=args.host, port=args.port, debug=args.debug)
