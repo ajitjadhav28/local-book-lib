@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request, render_template
 from db_update import SqliteConn, SQL_DB_NAME
-import os
+import os, functools
 from flask_cors import CORS
 
 app = Flask(__name__, template_folder=os.path.abspath('./build'), static_folder=os.path.abspath('./build/static'))
@@ -45,6 +45,7 @@ def index():
 
 
 @app.route('/<search>', methods=['POST'])
+@functools.lru_cache(maxsize=100)
 def search(search):
     print("Search: ", search)
     if request.method == 'POST' and len(search) > 0 :
@@ -52,6 +53,7 @@ def search(search):
 
 
 @app.route('/<search>/<int:limit>', methods=['POST'])
+@functools.lru_cache(maxsize=500)
 def search_limit(search, limit):
     print("Search: ", search)
     if request.method == 'POST' and len(search) > 0 and limit > 0:
@@ -64,4 +66,4 @@ if __name__ == "__main__":
     if not (os.path.exists(SQL_DB_NAME)):
         print('Database not found. Please create database with "python3 db_update.py db_update".')
         exit(1)
-    app.run(host="127.0.0.28", port=9999, debug=False)
+    app.run(host="127.0.0.28", port=9999, debug=True)

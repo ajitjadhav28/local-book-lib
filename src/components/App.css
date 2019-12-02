@@ -134,17 +134,22 @@ a:visited{
   font-size: larger;
   font-weight: 100;
   color: lightgray;
-  animation: scrollUp 25s 5s linear;
+  /* animation: scrollUp 40s 5s infinite linear; */
+  overflow-y: scroll;
+  text-align: left;
+  scrollbar-width: thin;
+  scrollbar-color: gray black ;
+  scroll-behavior: smooth;
 }
 
-@keyframes scrollUp {
+/* @keyframes scrollUp {
   from {
     transform: translateY(0);
   }
   to {
     transform: translateY(-110%);
   }
-}
+} */
 
 .book-card-download{
   text-align: right;

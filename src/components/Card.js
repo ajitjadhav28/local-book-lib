@@ -4,11 +4,11 @@ function CardDownload(props){
   let data = props.props  
   let data_dict = []
     if(data.pdf_url != "None")
-      data_dict.push(<a className="book-link-pdf App-link" href={data.pdf_url}>PDF({(data.pdf_size/(1024*1024)).toFixed(2)}MB)</a>)
+      data_dict.push(<a target="_blank"  className="book-link-pdf App-link" href={data.pdf_url}>PDF({(data.pdf_size/(1024*1024)).toFixed(2)}MB)</a>)
     if(data.epub_url != "None")
-      data_dict.push(<a className="book-link-epub App-link" href={data.epub_url}>EPUB({(data.epub_size/(1024*1024)).toFixed(2)}MB)</a>)
+      data_dict.push(<a target="_blank"  className="book-link-epub App-link" href={data.epub_url}>EPUB({(data.epub_size/(1024*1024)).toFixed(2)}MB)</a>)
     if(data.other_url != "None")
-      data_dict.push(<a className="book-link-epub App-link" href={data.other_url}>{data.format}({(data.other_size/(1024*1024)).toFixed(2)}MB)</a>)
+      data_dict.push(<a target="_blank"  className="book-link-epub App-link" href={data.other_url}>{data.format}({(data.other_size/(1024*1024)).toFixed(2)}MB)</a>)
     if(data_dict.length > 0){
       return (
         <React.Fragment>
