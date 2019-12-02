@@ -279,8 +279,8 @@ def backup(scraping_sitemap:bool = True):
         book_data = []
         all_book_pages = list(all_book_pages) if type(all_book_pages) is not list else all_book_pages
         for book_page in all_book_pages:
-            book_data.append(get_book_details(book_page)
-        
+            book_data.append(get_book_details(book_page))
+
 
     # try:
     #     with open("books.json", 'r+') as file:
