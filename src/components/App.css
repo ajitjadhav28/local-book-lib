@@ -147,7 +147,7 @@ a:visited{
     transform: translateY(0);
   }
   to {
-    transform: translateY(-110%);
+    transform: translateY(-300%);
   }
 } */
 
@@ -170,15 +170,15 @@ a:visited{
   justify-content: center;
 }
 
-  .search-input {
-    min-width: 400px;
-    max-width: 600px;
-    background-color: #000;
-    color: #fff;
-    height: 25px;
-    font-size: 18px;
-    border-radius: 15px;
-    border: 1px white solid;
-    padding-left: 10px;
-    padding-right: 10px;
-  }
+.search-input {
+  min-width: 400px;
+  max-width: 600px;
+  background-color: #000;
+  color: #fff;
+  height: 25px;
+  font-size: 18px;
+  border-radius: 15px;
+  border: 1px white solid;
+  padding-left: 10px;
+  padding-right: 10px;
+}
