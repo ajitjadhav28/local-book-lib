@@ -26,7 +26,7 @@ function CardDownload(props){
     return(
       <div className="book-card">
         <div className="book-card-img">
-            <a href={props.props.url}>
+            <a target="_blank" href={props.props.url}>
             {
                 props.props.image != null
                 ?(<img className="book-card-img-tag" src={"data:image/jpeg;base64,".concat(props.props.image)}/>)
