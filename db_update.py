@@ -169,15 +169,14 @@ def get_book_details(url: str):
     book_details['category'] = _extract_data(dd_data, 7, url, 'category')
     book_details['url'] = url
     desc_div = soup.find('div', attrs={'class': 'entry-content'})
+    new_lines = re.compile('\n\n+')
+    tabs = re.compile('\t\t+')
     try:
-        if desc_div.p:
-            book_details['description'] = str(desc_div.p.text).strip()
-        elif desc_div.div:
-            book_details['description'] = str(desc_div.div.text).strip()
-        elif desc_div.ul:
-            book_details['description'] = str(desc_div.ul.text).strip()
-        else:
-            book_details['description'] = str(desc_div.text).strip().replace(str(desc_div.h3.text), "")
+        book_details['description'] = str(desc_div.text).strip().replace(str(desc_div.h3.text), "")
+        book_details['description'] = new_lines.sub('\n', book_details['description'])
+        book_details['description'] = tabs.sub('\t', book_details['description'])
+        if book_details['description'][0] == '\n':
+            book_details['description'] = book_details['description'][1:]
     except Exception as e:
         print("Exception: ", e)
         print("Description not found for book: ", book_details['title'])
