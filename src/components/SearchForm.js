@@ -37,6 +37,11 @@ class SearchForm extends React.Component {
     return (
       <form className="search-form" onSubmit={this.handleSubmit}>
           <input className="search-input" placeholder="   Search Books" type="text" value={this.state.value} onChange={this.handleChange} />
+          <div style={{paddingTop: '3px', color: 'gray'}} >Hit Enter to load all results.&nbsp;
+          <a href="https://sqlite.org/fts5.html#full_text_query_syntax" target="_blank">
+            Query Syntax
+          </a>
+          </div>
       </form>
     );
   }
