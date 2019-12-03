@@ -44,7 +44,7 @@ a:visited{
   text-align: center;
   /* max-width: 1024px; */
 }
-@media only screen and (min-width:320px){
+@media only screen and (min-width:320px) and (max-width:599px){
   .book-card {
     width: 95%;
     height: 45%;

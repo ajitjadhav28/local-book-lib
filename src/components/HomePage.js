@@ -3,8 +3,6 @@ import SearchForm from './SearchForm'
 import axios from 'axios'
 import BookCard from './Card'
 
-let ProxyServer = "http://127.0.0.28:9999"
-
 class HomePage extends React.Component
 {
     constructor(props){
@@ -19,7 +17,7 @@ class HomePage extends React.Component
 
     componentDidMount(){
         let search = "/programming OR operating system OR algorithm OR Data Structures OR science/30"
-        axios.post(ProxyServer+search).then(
+        axios.post(search).then(
             (response) => {
                 this.setState({
                     books: response.data,
@@ -33,7 +31,7 @@ class HomePage extends React.Component
         if(search_text.length > 0){
           this.setState({search: search_text})
         if(submit){
-            axios.post(ProxyServer+"/"+search_text).then(
+            axios.post("/"+search_text).then(
                 (response) => {
                     this.setState({
                         books: response.data ? response.data : []
@@ -41,7 +39,7 @@ class HomePage extends React.Component
                 }
             )
         }else {
-          axios.post(ProxyServer+"/"+search_text+"/"+ 6).then(
+          axios.post("/"+search_text+"/"+ 6).then(
             (response) => {
                 this.setState({
                     books: response.data ? response.data : []
