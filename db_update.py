@@ -83,7 +83,7 @@ class SqliteConn:
 def _extract_data(data: list, index: int, url: str, atr: str) -> str:
     tmp = ""
     try:
-        tmp = str(data[index]).strip()
+        tmp = str(data[index]).strip().replace('"', "'")
     except Exception as e:
         print("Exception: ", e)
         print("Attribute '", atr, "' not found for : ", url)
@@ -102,6 +102,12 @@ def _get_random_header():
     }
     return headers
 
+def __extract_loc(url):
+    br = requests.get(url, headers=_get_random_header())
+    bsoup = BeautifulSoup(br.content, "lxml")
+    bkurls = bsoup.findAll('loc')
+    return [burl.text for burl in bkurls]
+
 def _fetch_only_sitemap(db: SqliteConn):
     r = requests.get(BASE_URL, headers=_get_random_header())
     interested_posts = re.compile('^http?://www.allitebooks.org/post-sitemap[0-9]+.xml$')
@@ -112,11 +118,18 @@ def _fetch_only_sitemap(db: SqliteConn):
         if interested_posts.match(url.text):
             all_posts.append(url.text)
     all_books = []
-    for post in all_posts:
-        br = requests.get(post, headers=_get_random_header())
-        bsoup = BeautifulSoup(br.content, "lxml")
-        bkurls = bsoup.findAll('loc')
-        all_books.extend([burl.text for burl in bkurls])
+    
+    try:
+        SitemapWorker = pool.Pool(processes=6)
+        work =  SitemapWorker.map(__extract_loc, all_posts)
+        for subwork in work:
+            all_books.extend(subwork)
+    except Exception as e:
+        print(e)
+        print("Trying single thread")
+        for post in all_posts:
+            all_books.extend(__extract_loc(post))
+
     new_books = []
     for book in all_books:
         cur = db.conn.execute("SELECT COUNT(*) from books where url='{}';".format(book))
@@ -134,19 +147,19 @@ def get_book_details(url: str):
     except Exception as e:
         print("Exception: ", e)
         print("Request failed for: ", url)
-        return None
+        return {'title': None, 'url': url}
     soup = BeautifulSoup(r.content, 'html5lib')
     book_details = {}
 
     try:
-        book_details['title'] = str(soup.find('h1', attrs={'class': 'single-title'}).text).strip()
+        book_details['title'] = str(soup.find('h1', attrs={'class': 'single-title'}).text).strip().replace('"', "'")
     except Exception as e:
         print("Exception: ", e)
         print("Title for book not found: ", url)
-        return None
+        return {'title': None, 'url': url}
 
     try:
-        book_details['sub_title'] = str(soup.find('header', attrs={'class': 'entry-header'}).h4.text).strip()
+        book_details['sub_title'] = str(soup.find('header', attrs={'class': 'entry-header'}).h4.text).strip().replace('"', "'")
     except Exception as e:
         print("Exception: ", e)
         print("Subtitle not found: ", url)
@@ -223,11 +236,9 @@ def get_book_details(url: str):
 
 def _insert_post(db: SqliteConn, url: str, last_modified):
     try:
-        db.conn.execute('BEGIN')
         db.conn.execute(POSTS_INSERT_FORMAT, (url, last_modified))
     except Exception as e:
         print(e, "$2")
-        db.conn.execute('ROLLBACK')
         return False
     db.conn.commit()
     return True
@@ -305,14 +316,18 @@ def backup(scraping_sitemap:bool = True):
     print("Found ", total_books, " books.")
     print("Updating new books.")
     for book in book_data:
-        if book is not None:
+        if book['title'] is not None:
             try:
                 print('Trying book: ', book['url'])
                 db.conn.execute('BEGIN')
                 db.conn.execute(BOOKS_INSERT_FORMAT.format(**book))
                 db.conn.execute(BOOKS_VIRT_INSRT_FRMT.format(**book))
+            except sqlite3.IntegrityError as e:
+                print(['IntegrityError'], e)
+                db.conn.execute('ROLLBACK')
+                continue
             except Exception as e:
-                print(e, ", url=", book['url'])
+                print(['Other'], e, ", url=", book['url'])
                 db.conn.execute('ROLLBACK')
                 continue
             books_updated += 1
