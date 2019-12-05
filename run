@@ -1,0 +1,9 @@
+#!/bin/bash
+
+source ./venv/bin/activate
+
+echo "Starting server at: http://localhost:9000"
+echo "Stop server using: kill \$(cat gunicorn_server.pid)"
+
+gunicorn --threads 2 -D --reload --bind localhost:9000 --pid gunicorn_server.pid wsgi:app
+
