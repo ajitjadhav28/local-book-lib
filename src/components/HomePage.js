@@ -29,7 +29,6 @@ class HomePage extends React.Component
 
     handleSearchCallback(search_text, submit){
         if(search_text.length > 0){
-          this.setState({search: search_text})
         if(submit){
             axios.post("/"+search_text).then(
                 (response) => {
@@ -38,7 +37,7 @@ class HomePage extends React.Component
                     })
                 }
             )
-        }else {
+        }else if(search_text.length > this.state.search.length) {
           axios.post("/"+search_text+"/"+ 6).then(
             (response) => {
                 this.setState({
@@ -46,10 +45,13 @@ class HomePage extends React.Component
                 })
             }
           )
-        }}
+        }
+        this.setState({search: search_text})
+        }
         else{
             this.setState({
-                books: this.state.initialBooks
+                books: this.state.initialBooks,
+                search: ''
             })
         }
         

@@ -203,11 +203,15 @@ a:visited{
 
 .search-form {
   width: 100%;
-  display: inline-block;
+  display: flex;
   justify-content: center;
+  flex-flow: row wrap;
+  font-size: 18px;
+  font-family: monospace;
 }
 
 .search-input {
+  background: transparent;
   min-width: 400px;
   max-width: 600px;
   background-color: #000;
@@ -216,6 +220,37 @@ a:visited{
   font-size: 18px;
   border-radius: 15px;
   border: 1px white solid;
-  padding-left: 10px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding-left: 12px;
   padding-right: 10px;
+}
+
+.search-suggestion{
+  color: gray;
+}
+
+.search-main{
+  background: transparent;
+  color: white;
+}
+
+.editable
+{
+    position: relative;
+    min-width: 400px;
+    max-width: 600px;
+    /* background-color: #000; */
+    /* color: #fff; */
+    height: 25px;
+    /* font-size: 15px; */
+    /* border-radius: 3px; */
+    /* border: 1px white solid; */
+    /* padding-left: 10px; */
+    /* padding-right: 10px; */
+}
+
+.item:nth-child(1n){
+  page-break-after: always;
 }
