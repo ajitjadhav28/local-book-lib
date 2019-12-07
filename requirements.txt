@@ -1,0 +1,9 @@
+beautifulsoup4
+bs4
+Flask
+Flask-Cors
+gunicorn
+html5lib
+humanfriendly
+lxml
+ultimate-sitemap-parser
