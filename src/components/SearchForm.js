@@ -51,6 +51,10 @@ class SearchForm extends React.Component {
       this.setState({value: this.state.suggest})
       event.preventDefault()
     }
+    if(event.key === 'Enter'){
+      event.preventDefault()
+      this.handleSubmit(event)
+    }
   }
 
   render() {
