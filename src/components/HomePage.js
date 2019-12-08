@@ -16,7 +16,10 @@ class HomePage extends React.Component
     }
 
     componentDidMount(){
-        let search = "/programming OR operating system OR algorithm OR Data Structures OR science/30"
+        let search = "/programming OR operating system OR algorithm \
+                        OR data structures OR science OR network\
+                        OR engineering OR hardware OR embedded OR database\
+                        /50"
         axios.post(search).then(
             (response) => {
                 this.setState({
@@ -38,7 +41,7 @@ class HomePage extends React.Component
                 }
             )
         }else if(search_text.length > this.state.search.length) {
-          axios.post("/"+search_text+"/"+ 6).then(
+          axios.post("/"+search_text+"/"+ 10).then(
             (response) => {
                 this.setState({
                     books: response.data ? response.data : []

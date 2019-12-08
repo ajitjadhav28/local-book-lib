@@ -6,7 +6,7 @@ from flask_cors import CORS
 app = Flask(__name__, template_folder=os.path.abspath('./build'), static_folder=os.path.abspath('./build/static'))
 cors = CORS(app)
 
-search_query = "SELECT url FROM books_virtual WHERE books_virtual MATCH '{}' ORDER BY RANK;"
+search_query = "SELECT url FROM books_virtual WHERE books_virtual MATCH '{}' ORDER BY RANK, year DESC;"
 
 
 def _dict_factory(cursor, row):
@@ -64,7 +64,7 @@ def search(search):
 
 @app.route('/suggest/<search>', methods=['POST'])
 @functools.lru_cache(maxsize=5000)
-def title_suggestion(search):
+def word_completion(search):
     if request.method == 'POST' and len(search) > 0:
         format_query = \
             "SELECT SNIPPET(books_virtual, 0, '', '', '', 10) AS suggest FROM books_virtual WHERE title MATCH '{}*' LIMIT 1;"

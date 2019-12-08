@@ -1,5 +1,5 @@
 import React from 'react';
-import axios from 'axios';
+// import axios from 'axios';
 
 class SearchForm extends React.Component {
   constructor(props) {
@@ -7,7 +7,7 @@ class SearchForm extends React.Component {
     this.state = {
       value: '',
       typing: false,
-      suggest: '',
+      // suggest: '',
       typingTimeout: 0
     };
 
@@ -26,17 +26,17 @@ class SearchForm extends React.Component {
       typing: false,
       typingTimeout: setTimeout(() => {
         this.props.callback(this.state.value, false)
-      }, 200)
+      }, 300)
     })
-    if(event.target.value.length > 2){
-      axios.post('/suggest/'+event.target.value)
-      .then( response => {
-        if(response.data.length > 0)
-          this.setState({suggest: response.data[0].suggest.toLowerCase()})
-      }).catch(error => console.error(error))
-    } else{
-      this.setState({suggest: ''})
-    }
+    // if(event.target.value.length > 2){
+    //   axios.post('/suggest/'+event.target.value)
+    //   .then( response => {
+    //     if(response.data.length > 0)
+    //       this.setState({suggest: response.data[0].suggest.toLowerCase()})
+    //   }).catch(error => console.error(error))
+    // } else{
+    //   this.setState({suggest: ''})
+    // }
   }
 
   handleSubmit(event) {
@@ -46,12 +46,12 @@ class SearchForm extends React.Component {
   }
 
   handleKeyDown(event){
-    if(event.keyCode === 9 && this.state.value.length < this.state.suggest.length){
-      this.props.callback('"'+this.state.suggest+'"', false)
-      this.setState({value: this.state.suggest})
-      event.preventDefault()
-    }
-    if(event.key === 'Enter'){
+    // if(event.keyCode === 9 && this.state.value.length < this.state.suggest.length){
+    //   this.props.callback('"'+this.state.suggest+'"', false)
+    //   this.setState({value: this.state.suggest})
+    //   event.preventDefault()
+    // }
+    if(event.key == 'Enter'){
       event.preventDefault()
       this.handleSubmit(event)
     }
