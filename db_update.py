@@ -1,4 +1,4 @@
-import requests, html5lib, sqlite3
+import requests, html5lib, sqlite3, logging
 from bs4 import BeautifulSoup
 from usp.tree import sitemap_tree_for_homepage
 from multiprocessing import pool
@@ -6,6 +6,7 @@ from random import randint
 from time import sleep
 from user_agents import user_agents, referer
 import re, humanfriendly, base64, random, string, argparse, os, json
+from term_colors import bcolors
 
 BASE_URL = "http://www.allitebooks.org/sitemap.xml"
 SQL_DB_NAME = "allitebooks.sql"
@@ -62,7 +63,7 @@ class SqliteConn:
         try:
             self._connection = sqlite3.connect(self._db_name)
         except sqlite3.Error as e:
-            print(e)
+            logging.critical(bcolors.fail(e))
             self.__del__()
 
     @property
@@ -75,7 +76,7 @@ class SqliteConn:
             return self._db_name
 
     def __del__(self):
-        print("Closing database connection.")
+        logging.info("Closing database connection.")
         if self._connection:
             self._connection.close()
 
@@ -85,8 +86,8 @@ def _extract_data(data: list, index: int, url: str, atr: str) -> str:
     try:
         tmp = str(data[index]).strip().replace('"', "'")
     except Exception as e:
-        print("Exception: ", e)
-        print("Attribute '", atr, "' not found for : ", url)
+        logging.debug(e)
+        logging.warning("Attribute '" + atr + "' not found for : " + bcolors.warn(url))
         return None
     return tmp
 
@@ -125,8 +126,8 @@ def _fetch_only_sitemap(db: SqliteConn):
         for subwork in work:
             all_books.extend(subwork)
     except Exception as e:
-        print(e)
-        print("Trying single thread")
+        logging.debug(e)
+        logging.info("Trying single thread")
         for post in all_posts:
             all_books.extend(__extract_loc(post))
 
@@ -145,8 +146,8 @@ def get_book_details(url: str):
     try:
         r = requests.get(url, headers=_get_random_header(), timeout=(5, 15))
     except Exception as e:
-        print("Exception: ", e)
-        print("Request failed for: ", url)
+        logging.debug(e)
+        logging.warning("Request failed for: " + bcolors.warn(url))
         return {'title': None, 'url': url}
     soup = BeautifulSoup(r.content, 'html5lib')
     book_details = {}
@@ -154,15 +155,15 @@ def get_book_details(url: str):
     try:
         book_details['title'] = str(soup.find('h1', attrs={'class': 'single-title'}).text).strip().replace('"', "'")
     except Exception as e:
-        print("Exception: ", e)
-        print("Title for book not found: ", url)
+        logging.debug(e)
+        logging.warning("Title for book not found: " + bcolors.warn(url))
         return {'title': None, 'url': url}
 
     try:
         book_details['sub_title'] = str(soup.find('header', attrs={'class': 'entry-header'}).h4.text).strip().replace('"', "'")
     except Exception as e:
-        print("Exception: ", e)
-        print("Subtitle not found: ", url)
+        logging.debug(e)
+        logging.warning("Subtitle not found: " + bcolors.warn(url))
         book_details['sub_title'] = None
 
     table = soup.find('div', attrs={'class': 'book-detail'})
@@ -191,8 +192,8 @@ def get_book_details(url: str):
         if book_details['description'][0] == '\n':
             book_details['description'] = book_details['description'][1:]
     except Exception as e:
-        print("Exception: ", e)
-        print("Description not found for book: ", book_details['title'])
+        logging.debug(e)
+        logging.warning("Description not found for book: " + book_details['title'])
         book_details['description'] = None
     down_data = soup.findAll('span', attrs={'class': 'download-links'})
     book_details['pdf_url'] = None
@@ -210,25 +211,25 @@ def get_book_details(url: str):
             try:
                 book_details['pdf_size'] = humanfriendly.parse_size(sz)
             except Exception as e:
-                print(e)
+                logging.debug(e)
 
         elif dt.a['href'].find('.epub') > 0:
             book_details['epub_url'] = dt.a['href']
             try:
                 book_details['epub_size'] = humanfriendly.parse_size(dt.a.span.text.strip('()'))
             except Exception as e:
-                print(e)
+                logging.debug(e)
         else:
             book_details['other_url'] = dt.a['href']
             try:
                 book_details['other_size'] = humanfriendly.parse_size(dt.a.span.text.strip('()'))
             except Exception as e:
-                print(e)
+                logging.debug(e)
     try:
         book_details['image_url'] = \
             str(soup.find('img', attrs={'class': 'attachment-post-thumbnail wp-post-image'})['src']).strip()
     except Exception as e:
-        print('Thumbnail Exception: ', e)
+        logging.debug(e)
         book_details['image_url'] = None
 
     return book_details
@@ -238,7 +239,7 @@ def _insert_post(db: SqliteConn, url: str, last_modified):
     try:
         db.conn.execute(POSTS_INSERT_FORMAT, (url, last_modified))
     except Exception as e:
-        print(e, "$2")
+        logging.error(e)
         return False
     db.conn.commit()
     return True
@@ -280,13 +281,14 @@ def backup(scraping_sitemap:bool = True):
     else:
         all_book_pages, all_post_pages = _scrapping_website(db)
         insert_posts(db, all_post_pages)
-
+    print(bcolors.blue("Found " + str(len(all_book_pages)) + " book pages."))
+    print(bcolors.blue('Checking books...'))
     try:
         BookWorker = pool.Pool(processes=10)
         book_data = BookWorker.map(get_book_details, list(all_book_pages))
     except Exception as e:
-        print(e)
-        print("Trying with single thread")
+        logging.debug(e)
+        logging.info("Trying with single thread")
         book_data = []
         all_book_pages = list(all_book_pages) if type(all_book_pages) is not list else all_book_pages
         for book_page in all_book_pages:
@@ -313,27 +315,27 @@ def backup(scraping_sitemap:bool = True):
 
     books_updated = 0
     total_books = len(book_data)
-    print("Found ", total_books, " books.")
-    print("Updating new books.")
+    print( bcolors.green("Found " + str(total_books) + " books."))
+    print(bcolors.blue("Updating books."))
     for book in book_data:
         if book['title'] is not None:
             try:
-                print('Trying book: ', book['url'])
                 db.conn.execute('BEGIN')
                 db.conn.execute(BOOKS_INSERT_FORMAT.format(**book))
                 db.conn.execute(BOOKS_VIRT_INSRT_FRMT.format(**book))
             except sqlite3.IntegrityError as e:
-                print(['IntegrityError'], e)
+                logging.debug( bcolors.color('[IntegrityError] ', bcolors.yellow) + str(e))
+                logging.info(bcolors.color('Book aready exists: ', bcolors.orange) + book['title'])
                 db.conn.execute('ROLLBACK')
                 continue
             except Exception as e:
-                print(['Other'], e, ", url=", book['url'])
+                logging.warning(bcolors.color('[Other] ', bcolors.yellow) + str(e) + " + url=" + bcolors.warn(book['url']))
                 db.conn.execute('ROLLBACK')
                 continue
             books_updated += 1
             db.conn.commit()
         sleep(0.001)
-    print("Updated database with ", books_updated, " new books.")
+    print( bcolors.green("Updated database with " + str(books_updated) + " new books."))
 
 
 def _update_image(db, image_url: str):
@@ -343,11 +345,11 @@ def _update_image(db, image_url: str):
         db.execute('BEGIN')
         db.execute('UPDATE books SET image=? WHERE image_url=?', (_base64_string(image_request.content), image_url))
     except Exception as e:
-        print("ERROR while updating image for: ", image_url)
+        logging.error("ERROR while updating image for: ", image_url)
         db.execute('ROLLBACK')
         return False
     db.commit()
-    print("Image Updated: ", image_url)
+    logging.info("Image Updated: ", image_url)
     return True
 
 
@@ -357,7 +359,8 @@ def update_images():
     try:
         images = db.execute('SELECT image_url FROM books WHERE image_url IS NOT "None" and image isnull;')
     except Exception as e:
-        print("Can't fetch image url data from database.", e)
+        logging.debug(e)
+        logging.error("Can't fetch image url data from database.")
         return
     i = 1
     for image in images.fetchall():
@@ -392,12 +395,12 @@ def _update_null_url_books():
                 db.execute(BOOKS_INSERT_FORMAT.format(**new_book))
                 db.execute(BOOKS_VIRT_INSRT_FRMT.format(**new_book))
             except Exception as e:
-                print('Error while updating new book.', url[0])
+                logging.error('Error while updating new book.' + url[0])
                 unique_isbn = re.compile('^UNIQUE.*books.isbn$')
-                print(e)
+                logging.debug(e)
                 db.execute("ROLLBACK")
                 if unique_isbn.match(str(e)) is not None:
-                    print('Removing duplicate book')
+                    logging.info('Removing duplicate book')
                     db.execute('DELETE FROM books WHERE url="{}"'.format(url[0]))
                     db.commit()
                 continue
@@ -406,21 +409,27 @@ def _update_null_url_books():
     db.close()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="This program collect data from website 'allitebooks.org'. It creates "
+    parser = argparse.ArgumentParser(description=bcolors.header("This program collect data from website 'allitebooks.org'. It creates "
                                                  "local copy to search and download books faster. If you want "
                                                  "lightweight database then don't update images in database. For "
-                                                 "first run it may take good amount of time be patient.")
+                                                 "first run it may take good amount of time be patient."))
     parser.add_argument("action", help="Specify action: db_update, img_update")
     parser.add_argument("-w", "--website", action="store_true", help="Scraps whole website sitemap instead of just book. It may take extra time.")
+    parser.add_argument("-l", "--log", type=str, default='WARN',
+            choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], help="Specify logging levels.")
+    
     args = parser.parse_args()
+    log_level = getattr(logging, args.log.upper(), None)
+    log_format = bcolors.FAIL + "[%(levelname)s]" + bcolors.ENDC + ": %(message)s"
+    logging.basicConfig(level=log_level, format=log_format)
     if args.action == 'db_update':
-        print('Updating database. This may take time.')
-        print('Starting website scraping..')
+        print(bcolors.header('Updating database. This may take time.'))
+        print(bcolors.header('Starting website scraping..'))
         backup(not args.website)
     elif args.action == 'img_update':
         if not os.path.exists(SQL_DB_NAME):
-            print("Database does not exists. Please create database first using 'db_update' argument.")
+            logging.critical(bcolors.fail("Database does not exists. Please create database first using 'db_update' argument."))
             exit(1)
         else:
-            print('Downloading images into database.')
+            print(bcolors.header('Downloading images into database.'))
             update_images()
