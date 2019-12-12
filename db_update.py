@@ -325,7 +325,7 @@ def backup(scraping_sitemap:bool = True):
                 db.conn.execute(BOOKS_VIRT_INSRT_FRMT.format(**book))
             except sqlite3.IntegrityError as e:
                 logging.debug( bcolors.color('[IntegrityError] ', bcolors.yellow) + str(e))
-                logging.info(bcolors.color('Book aready exists: ', bcolors.orange) + book['title'])
+                logging.warning(bcolors.color('Book aready exists: ', bcolors.orange) + book['title'])
                 db.conn.execute('ROLLBACK')
                 continue
             except Exception as e:
