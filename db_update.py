@@ -80,11 +80,14 @@ class SqliteConn:
         if self._connection:
             self._connection.close()
 
+def _replace_double_quotes(data: str):
+    return data.strip().replace('"', "'")
+
 
 def _extract_data(data: list, index: int, url: str, atr: str) -> str:
     tmp = ""
     try:
-        tmp = str(data[index]).strip().replace('"', "'")
+        tmp = _replace_double_quotes(str(data[index]))
     except Exception as e:
         logging.debug(e)
         logging.warning("Attribute '" + atr + "' not found for : " + bcolors.warn(url))
@@ -191,6 +194,7 @@ def get_book_details(url: str):
         book_details['description'] = tabs.sub('\t', book_details['description'])
         if book_details['description'][0] == '\n':
             book_details['description'] = book_details['description'][1:]
+        book_details['description'] = _replace_double_quotes(book_details['description'])
     except Exception as e:
         logging.debug(e)
         logging.warning("Description not found for book: " + book_details['title'])
@@ -313,7 +317,7 @@ def backup(scraping_sitemap:bool = True):
     # except Exception as e:
     #     print(e)
 
-    books_updated = 0
+    books_updated = []
     total_books = len(book_data)
     print( bcolors.green("Found " + str(total_books) + " books."))
     print(bcolors.blue("Updating books."))
@@ -329,14 +333,17 @@ def backup(scraping_sitemap:bool = True):
                 db.conn.execute('ROLLBACK')
                 continue
             except Exception as e:
-                logging.warning(bcolors.color('[Other] ', bcolors.yellow) + str(e) + " + url=" + bcolors.warn(book['url']))
+                logging.warning(bcolors.color('[Other] ', bcolors.yellow) + str(e) + " url=" + bcolors.warn(book['url']))
+                logging.debug('Book data: ')
+                logging.debug(str(book))
                 db.conn.execute('ROLLBACK')
                 continue
-            books_updated += 1
+            books_updated.append(book['title'])
             db.conn.commit()
         sleep(0.001)
-    print( bcolors.green("Updated database with " + str(books_updated) + " new books."))
-
+    print( bcolors.green("Updated database with " + str(len(books_updated)) + " new books."))
+    for i, book in enumerate(books_updated):
+        print(bcolors.color('\t{}) {}'.format(i+1, book), bcolors.lightgreen))
 
 def _update_image(db, image_url: str):
     _base64_string = lambda raw_byte : base64.encodebytes(raw_byte).decode('utf-8')
