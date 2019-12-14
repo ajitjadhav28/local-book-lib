@@ -13,6 +13,12 @@ class HomePage extends React.Component
             search: ''
         }
         this.handleSearchCallback = this.handleSearchCallback.bind(this)
+        this.handleKeyDown = this.handleKeyDown.bind(this)
+    }
+
+    handleKeyDown(event){
+        if(event.ctrlKey && event.composed && event.shiftKey && event.key == 'F')
+            document.getElementById("search-input-box").focus()
     }
 
     componentDidMount(){
@@ -28,6 +34,7 @@ class HomePage extends React.Component
                 })
             }
         )
+        document.addEventListener('keydown', this.handleKeyDown, false)
     }
 
     handleSearchCallback(search_text, submit){

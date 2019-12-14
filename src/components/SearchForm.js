@@ -67,6 +67,7 @@ class SearchForm extends React.Component {
               disabled="True"
             />
             <input className="search-input search-main"
+              id="search-input-box"
               placeholder="Search Books"
               type="text" 
               value={this.state.value}
