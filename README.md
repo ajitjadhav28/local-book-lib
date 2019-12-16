@@ -1,6 +1,9 @@
 # Website Scrapper
 Collects data from allitebooks.org to search and download books faster.
 
+## Screenshot
+![Screenshot of app on firefox](https://github.com/ajitjadhav28/local-book-lib/blob/master/screenshot.png)
+
 ## Requirements
 ### Run/Usage requirements
 - python3, sqlite3
