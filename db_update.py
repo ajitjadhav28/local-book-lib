@@ -7,6 +7,7 @@ from time import sleep
 from user_agents import user_agents, referer
 import re, humanfriendly, base64, random, string, argparse, os, json
 from term_colors import bcolors
+from datetime import datetime
 
 BASE_URL = "http://www.allitebooks.org/sitemap.xml"
 SQL_DB_NAME = "allitebooks.sql"
@@ -19,6 +20,18 @@ POSTS_CREATE_TABLE_SQL = """ CREATE TABLE IF NOT EXISTS posts(
                     """
 
 POSTS_INSERT_FORMAT = "INSERT INTO posts(url, last_modified) VALUES(?,?)"
+
+DUPLICATE_BOOKS_CREATE_TABLE = """CREATE TABLE IF NOT EXISTS duplicate_books(
+                                    id INTEGER PRIMARY KEY,
+                                    url TEXT NOT NULL UNIQUE,
+                                    book_id INTEGER NOT NULL,
+                                    updated TEXT,
+                                    FOREIGN KEY(book_id) REFERENCES books(id)
+                                   );
+                                    """
+
+DUPLICATE_BOOKS_INSERT_FORMAT = """INSERT INTO duplicate_books(url, book_id, updated)
+                                    VALUES("{url}", "{book_id}", "{updated}");"""
 
 BOOKS_CREATE_TABLE = """ CREATE TABLE IF NOT EXISTS books(
                         id INTEGER PRIMARY KEY,
@@ -80,6 +93,11 @@ class SqliteConn:
         if self._connection:
             self._connection.close()
 
+
+def _iso8601_time_now() -> str:
+    return datetime.now().replace(microsecond=0).isoformat()
+
+
 def _replace_double_quotes(data: str):
     return data.strip().replace('"', "'")
 
@@ -106,13 +124,15 @@ def _get_random_header():
     }
     return headers
 
+
 def __extract_loc(url):
     br = requests.get(url, headers=_get_random_header())
     bsoup = BeautifulSoup(br.content, "lxml")
     bkurls = bsoup.findAll('loc')
     return [burl.text for burl in bkurls]
 
-def _fetch_only_sitemap(db: SqliteConn):
+
+def _fetch_only_sitemap(db: SqliteConn, procs: int = 6):
     r = requests.get(BASE_URL, headers=_get_random_header())
     interested_posts = re.compile('^http?://www.allitebooks.org/post-sitemap[0-9]+.xml$')
     soup = BeautifulSoup(r.content, "lxml")
@@ -122,10 +142,10 @@ def _fetch_only_sitemap(db: SqliteConn):
         if interested_posts.match(url.text):
             all_posts.append(url.text)
     all_books = []
-    
+
     try:
-        SitemapWorker = pool.Pool(processes=6)
-        work =  SitemapWorker.map(__extract_loc, all_posts)
+        SitemapWorker = pool.Pool(processes=procs)
+        work = SitemapWorker.map(__extract_loc, all_posts)
         for subwork in work:
             all_books.extend(subwork)
     except Exception as e:
@@ -134,13 +154,23 @@ def _fetch_only_sitemap(db: SqliteConn):
         for post in all_posts:
             all_books.extend(__extract_loc(post))
 
-    new_books = []
-    for book in all_books:
-        cur = db.conn.execute("SELECT COUNT(*) from books where url='{}';".format(book))
-        dt = cur.fetchone()
-        if dt[0] == 0:
-            new_books.append(book)
-    return new_books
+    db_books = db.conn.execute("SELECT url FROM books;").fetchall()
+    duplicate_books = db.conn.execute("SELECT url from duplicate_books;").fetchall()
+    duplicate_books = [db[0] for db in duplicate_books]
+    logging.debug(f'Duplicate books in database: {len(duplicate_books)}')
+    logging.debug(f'Books found in sitemap: {len(all_books)}')
+    logging.debug(f'Total books in database: {len(db_books)}')
+    db_books = [book[0] for book in db_books]
+    db_books.extend(duplicate_books)
+    new_books = set(all_books) - set(db_books)
+    logging.debug(f'New books found: {len(new_books)}')
+    # for book in all_books:
+    #     cur = db.conn.execute("SELECT COUNT(*) from books where url='{}';".format(book))
+    #     dt = cur.fetchone()
+    #     if dt[0] == 0:
+    #         new_books.append(book)
+    return list(new_books)
+
 
 def get_book_details(url: str):
     r = None
@@ -160,10 +190,12 @@ def get_book_details(url: str):
     except Exception as e:
         logging.debug(e)
         logging.warning("Title for book not found: " + bcolors.warn(url))
+        logging.warning("Ignoring this url.")
         return {'title': None, 'url': url}
 
     try:
-        book_details['sub_title'] = str(soup.find('header', attrs={'class': 'entry-header'}).h4.text).strip().replace('"', "'")
+        book_details['sub_title'] = str(soup.find('header', attrs={'class': 'entry-header'}).h4.text).strip().replace(
+            '"', "'")
     except Exception as e:
         logging.debug(e)
         logging.warning("Subtitle not found: " + bcolors.warn(url))
@@ -255,6 +287,7 @@ def insert_posts(db: SqliteConn, data: set):
         _insert_post(db, url, last_mod)
     db.conn.commit()
 
+
 def _scrapping_website(db: SqliteConn):
     all_book_pages = set([])
     all_post_pages = set([])
@@ -270,25 +303,39 @@ def _scrapping_website(db: SqliteConn):
             if dt[0] == 0:
                 all_book_pages.add(str(page.url))
                 all_post_pages.add(str(page.url) + '#$#' + str(page.last_modified))
-    return(all_book_pages, all_post_pages)
+    return (all_book_pages, all_post_pages)
 
-def backup(scraping_sitemap:bool = True):
+
+def _get_book_id(isbn: str, db: SqliteConn) -> int:
+    try:
+        r = db.conn.execute(f'SELECT id from books where isbn="{isbn}";').fetchone()
+    except Exception as e:
+        logging.debug("Exception while fetching id of book")
+        logging.debug(e)
+        return -1
+    if r is None:
+        return -1
+    return r[0]
+
+
+def backup(scraping_sitemap: bool = True, procs: int = 10):
     db = SqliteConn(SQL_DB_NAME)
     db.conn.execute(BOOKS_CREATE_TABLE)
     db.conn.execute(POSTS_CREATE_TABLE_SQL)
     db.conn.execute(BOOKS_CREATE_VIRTUAL_TABLE)
+    db.conn.execute(DUPLICATE_BOOKS_CREATE_TABLE)
     db.conn.commit()
     all_post_pages = []
     all_book_pages = []
     if scraping_sitemap:
-        all_book_pages = all_post_pages = _fetch_only_sitemap(db)
+        all_book_pages = all_post_pages = _fetch_only_sitemap(db, procs)
     else:
         all_book_pages, all_post_pages = _scrapping_website(db)
         insert_posts(db, all_post_pages)
     print(bcolors.blue("Found " + str(len(all_book_pages)) + " book pages."))
     print(bcolors.blue('Checking books...'))
     try:
-        BookWorker = pool.Pool(processes=10)
+        BookWorker = pool.Pool(processes=procs)
         book_data = BookWorker.map(get_book_details, list(all_book_pages))
     except Exception as e:
         logging.debug(e)
@@ -298,55 +345,59 @@ def backup(scraping_sitemap:bool = True):
         for book_page in all_book_pages:
             book_data.append(get_book_details(book_page))
 
-
-    # try:
-    #     with open("books.json", 'r+') as file:
-    #         old_data = []
-    #         try:
-    #             old_data = json.loads(file.read())
-    #         except Exception as e:
-    #             print(e)
-    #         old_data.extend(book_data)
-    #         file.write(json.dumps(old_data))
-    # except Exception as e:
-    #     print("Error in saving json data: ", e)
-
-    # try:
-    #     with open("books.json", 'r') as file:
-    #         book_data = json.loads(file.read())
-    # except Exception as e:
-    #     print(e)
-
     books_updated = []
-    total_books = len(book_data)
-    print( bcolors.green("Found " + str(total_books) + " books."))
+    book_data = filter(lambda b: b['title'] is not None, book_data)
+    duplicate_books = []
     print(bcolors.blue("Updating books."))
     for book in book_data:
-        if book['title'] is not None:
-            try:
-                db.conn.execute('BEGIN')
-                db.conn.execute(BOOKS_INSERT_FORMAT.format(**book))
-                db.conn.execute(BOOKS_VIRT_INSRT_FRMT.format(**book))
-            except sqlite3.IntegrityError as e:
-                logging.debug( bcolors.color('[IntegrityError] ', bcolors.yellow) + str(e))
-                logging.warning(bcolors.color('Book aready exists: ', bcolors.orange) + book['title'])
-                db.conn.execute('ROLLBACK')
-                continue
-            except Exception as e:
-                logging.warning(bcolors.color('[Other] ', bcolors.yellow) + str(e) + " url=" + bcolors.warn(book['url']))
-                logging.debug('Book data: ')
-                logging.debug(str(book))
-                db.conn.execute('ROLLBACK')
-                continue
-            books_updated.append(book['title'])
-            db.conn.commit()
-        sleep(0.001)
-    print( bcolors.green("Updated database with " + str(len(books_updated)) + " new books."))
-    for i, book in enumerate(books_updated):
-        print(bcolors.color('\t{}) {}'.format(i+1, book), bcolors.lightgreen))
+        try:
+            db.conn.execute('BEGIN')
+            db.conn.execute(BOOKS_INSERT_FORMAT.format(**book))
+            db.conn.execute(BOOKS_VIRT_INSRT_FRMT.format(**book))
+        except sqlite3.IntegrityError as e:
+            logging.debug(bcolors.color('[IntegrityError] ', bcolors.yellow) + str(e))
+            db.conn.execute('ROLLBACK')
+            logging.warning(bcolors.color('Book already exists: ', bcolors.orange) + book['title'])
+            logging.info("Adding this book url to duplicates table.")
+            duplicate_books.append({
+                'url': book['url'],
+                'book_id': _get_book_id(book['isbn'], db),
+                'updated': _iso8601_time_now()
+            })
+            continue
+        except Exception as e:
+            logging.warning(bcolors.color('[Other] ', bcolors.yellow) + str(e) + " url=" + bcolors.warn(book['url']))
+            logging.debug('Book data: ')
+            logging.debug(str(book))
+            db.conn.execute('ROLLBACK')
+            continue
+        books_updated.append(book['title'])
+        db.conn.commit()
+
+    if len(books_updated) > 0:
+        print(bcolors.green("Updated database with " + str(len(books_updated)) + " new books."))
+    elif len(books_updated) == 0:
+        print(bcolors.color('No new books found.', bcolors.yellow))
+
+    if len(duplicate_books) > 0:
+        print(bcolors.color(f'Duplicate books found: {len(duplicate_books)}.', color=bcolors.purple))
+
+    if len(books_updated) < 50:
+        for i, book in enumerate(books_updated):
+            print(bcolors.color('\t{}) {}'.format(i + 1, book), bcolors.lightgreen))
+
+    for book in duplicate_books:
+        try:
+            db.conn.execute(DUPLICATE_BOOKS_INSERT_FORMAT.format(**book))
+        except Exception as e:
+            logging.debug("Error while adding duplicate books.")
+            logging.debug(e)
+            continue
+        db.conn.commit()
+
 
 def _update_image(db, image_url: str):
-    _base64_string = lambda raw_byte : base64.encodebytes(raw_byte).decode('utf-8')
+    _base64_string = lambda raw_byte: base64.encodebytes(raw_byte).decode('utf-8')
     try:
         image_request = requests.get(image_url, headers=_get_random_header(), timeout=(5, 15))
         db.execute('BEGIN')
@@ -415,16 +466,22 @@ def _update_null_url_books():
             _update_image(db, url[0])
     db.close()
 
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=bcolors.header("This program collect data from website 'allitebooks.org'. It creates "
-                                                 "local copy to search and download books faster. If you want "
-                                                 "lightweight database then don't update images in database. For "
-                                                 "first run it may take good amount of time be patient."))
+    parser = argparse.ArgumentParser(
+        description=bcolors.header("This program collect data from website 'allitebooks.org'. It creates "
+                                   "local copy to search and download books faster. If you want "
+                                   "lightweight database then don't update images in database. For "
+                                   "first run it may take good amount of time be patient."
+                                   )
+    )
     parser.add_argument("action", help="Specify action: db_update, img_update")
-    parser.add_argument("-w", "--website", action="store_true", help="Scraps whole website sitemap instead of just book. It may take extra time.")
-    parser.add_argument("-l", "--log", type=str, default='WARN',
-            choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], help="Specify logging levels.")
-    
+    parser.add_argument("-w", "--website", action="store_true",
+                        help="Scraps whole website sitemap instead of just book. It may take extra time.")
+    parser.add_argument("-l", "--log", type=str, default='ERROR',
+                        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], help="Specify logging levels.")
+    parser.add_argument('-j', '--jobs', default=10, type=int, help="No of parallel jobs of worker.")
+
     args = parser.parse_args()
     log_level = getattr(logging, args.log.upper(), None)
     log_format = bcolors.FAIL + "[%(levelname)s]" + bcolors.ENDC + ": %(message)s"
@@ -432,10 +489,11 @@ if __name__ == "__main__":
     if args.action == 'db_update':
         print(bcolors.header('Updating database. This may take time.'))
         print(bcolors.header('Starting website scraping..'))
-        backup(not args.website)
+        backup(not args.website, args.jobs)
     elif args.action == 'img_update':
         if not os.path.exists(SQL_DB_NAME):
-            logging.critical(bcolors.fail("Database does not exists. Please create database first using 'db_update' argument."))
+            logging.critical(bcolors.fail("Database does not exists. Please create database first using 'db_update' "
+                                          "argument."))
             exit(1)
         else:
             print(bcolors.header('Downloading images into database.'))

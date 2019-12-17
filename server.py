@@ -83,7 +83,7 @@ def search_limit(search, limit):
 
 if __name__ == "__main__":
     if not (os.path.exists(SQL_DB_NAME)):
-        print(bcolors.fail('Database not found. Please create database with "python3 db_update.py db_update".'))
+        logging.critical(bcolors.fail('Database not found. Please create database with "python3 db_update.py db_update".'))
         exit(1)
     parser = argparse.ArgumentParser(description="Local Book library server", prog="server.py")
     parser.add_argument('-d', '--debug', action="store_true", help="Start server in debug mode")
