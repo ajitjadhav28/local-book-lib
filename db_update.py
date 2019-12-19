@@ -374,13 +374,13 @@ def backup(scraping_sitemap: bool = True, procs: int = 10):
         books_updated.append(book['title'])
         db.conn.commit()
 
+    if len(duplicate_books) > 0:
+        print(bcolors.color(f'Duplicate books found: {len(duplicate_books)}.', color=bcolors.purple))
+    
     if len(books_updated) > 0:
         print(bcolors.green("Updated database with " + str(len(books_updated)) + " new books."))
     elif len(books_updated) == 0:
         print(bcolors.color('No new books found.', bcolors.yellow))
-
-    if len(duplicate_books) > 0:
-        print(bcolors.color(f'Duplicate books found: {len(duplicate_books)}.', color=bcolors.purple))
 
     if len(books_updated) < 50:
         for i, book in enumerate(books_updated):
