@@ -7,7 +7,7 @@ Collects data from allitebooks.org to search and download books faster.
 ## Requirements
 ### Run/Usage requirements
 - python3, sqlite3
-- Python packages: flask, flask_cors, html5lib, bs4, humanfriendly, ultimate-sitemap-parser, lxml
+- pathon packages from requirements.txt 
 
 ### Install
 - Install python3 and sqlite with FTS5 support
@@ -20,6 +20,6 @@ Collects data from allitebooks.org to search and download books faster.
 ### Development requirements
 - nodejs
 - python3, sqlite3
-- Python packages: flask, flask_cors, html5lib, bs4, humanfriendly, ultimate-sitemap-parser, lxml
+- python packages from requirements.txt
 
 #### Use `npm update` or `yarn` get required package(react frontend) for development.

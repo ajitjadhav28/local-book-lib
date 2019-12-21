@@ -8,6 +8,7 @@ from user_agents import user_agents, referer
 import re, humanfriendly, base64, random, string, argparse, os, json
 from term_colors import bcolors
 from datetime import datetime
+import tqdm
 
 BASE_URL = "http://www.allitebooks.org/sitemap.xml"
 SQL_DB_NAME = "allitebooks.sql"
@@ -142,10 +143,9 @@ def _fetch_only_sitemap(db: SqliteConn, procs: int = 6):
         if interested_posts.match(url.text):
             all_posts.append(url.text)
     all_books = []
-
     try:
         SitemapWorker = pool.Pool(processes=procs)
-        work = SitemapWorker.map(__extract_loc, all_posts)
+        work = SitemapWorker.imap_unordered(__extract_loc, all_posts)
         for subwork in work:
             all_books.extend(subwork)
     except Exception as e:
@@ -333,22 +333,31 @@ def backup(scraping_sitemap: bool = True, procs: int = 10):
         all_book_pages, all_post_pages = _scrapping_website(db)
         insert_posts(db, all_post_pages)
     print(bcolors.blue("Found " + str(len(all_book_pages)) + " book pages."))
-    print(bcolors.blue('Checking books...'))
+    PBAR = tqdm.tqdm(total=len(all_book_pages), unit=" book", desc=bcolors.color("checking books", bcolors.lightgreen), ascii=True)
     try:
         BookWorker = pool.Pool(processes=procs)
-        book_data = BookWorker.map(get_book_details, list(all_book_pages))
+        book_data = BookWorker.imap_unordered(get_book_details, list(all_book_pages))
+        BookWorker.close()
+        a, b = 0, book_data._index + 1
+        t = len(all_book_pages)
+        while b < t:
+            PBAR.update(b-a)
+            a, b = b, book_data._index + 1
     except Exception as e:
         logging.debug(e)
         logging.info("Trying with single thread")
         book_data = []
         all_book_pages = list(all_book_pages) if type(all_book_pages) is not list else all_book_pages
         for book_page in all_book_pages:
+            PBAR.update(1)
             book_data.append(get_book_details(book_page))
+    PBAR.close()
 
     books_updated = []
+    t = len(tuple(book_data))
     book_data = filter(lambda b: b['title'] is not None, book_data)
     duplicate_books = []
-    print(bcolors.blue("Updating books."))
+    PBAR = tqdm.tqdm(total=t, desc=bcolors.blue("updating database"), unit=" book", ascii=True)
     for book in book_data:
         try:
             db.conn.execute('BEGIN')
@@ -373,7 +382,8 @@ def backup(scraping_sitemap: bool = True, procs: int = 10):
             continue
         books_updated.append(book['title'])
         db.conn.commit()
-
+        PBAR.update(1)
+    PBAR.close()
     if len(duplicate_books) > 0:
         print(bcolors.color(f'Duplicate books found: {len(duplicate_books)}.', color=bcolors.purple))
     
@@ -477,7 +487,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("action", help="Specify action: db_update, img_update")
     parser.add_argument("-w", "--website", action="store_true",
-                        help="Scraps whole website sitemap instead of just book. It may take extra time.")
+                        help="Scraps whole website sitemap instead of just books. It may take extra time.")
     parser.add_argument("-l", "--log", type=str, default='ERROR',
                         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], help="Specify logging levels.")
     parser.add_argument('-j', '--jobs', default=10, type=int, help="No of parallel jobs of worker.")
