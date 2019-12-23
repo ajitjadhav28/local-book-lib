@@ -174,7 +174,7 @@ def _fetch_only_sitemap(db: SqliteConn, procs: int = 6):
 
 def get_book_details(url: str):
     r = None
-    delay = randint(0, 2)
+    delay = randint(0, 2) * random.random()
     sleep(delay)
     try:
         r = requests.get(url, headers=_get_random_header(), timeout=(5, 15))
