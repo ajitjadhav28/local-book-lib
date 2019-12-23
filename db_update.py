@@ -333,6 +333,7 @@ def backup(scraping_sitemap: bool = True, procs: int = 10):
         all_book_pages, all_post_pages = _scrapping_website(db)
         insert_posts(db, all_post_pages)
     print(bcolors.blue("Found " + str(len(all_book_pages)) + " book pages."))
+    sleep(0.1)
     PBAR = tqdm.tqdm(total=len(all_book_pages), unit=" book", desc=bcolors.color("checking books", bcolors.lightgreen), ascii=True)
     try:
         BookWorker = pool.Pool(processes=procs)
@@ -354,7 +355,8 @@ def backup(scraping_sitemap: bool = True, procs: int = 10):
     PBAR.close()
 
     books_updated = []
-    t = len(tuple(book_data))
+    book_data = tuple(book_data)
+    t = len(book_data)
     book_data = filter(lambda b: b['title'] is not None, book_data)
     duplicate_books = []
     PBAR = tqdm.tqdm(total=t, desc=bcolors.blue("updating database"), unit=" book", ascii=True)
