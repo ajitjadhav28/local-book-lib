@@ -337,27 +337,29 @@ def backup(scraping_sitemap: bool = True, procs: int = 10):
     PBAR = tqdm.tqdm(total=len(all_book_pages), unit=" book", desc=bcolors.color("checking books", bcolors.lightgreen), ascii=True)
     try:
         BookWorker = pool.Pool(processes=procs)
-        book_data = BookWorker.imap_unordered(get_book_details, list(all_book_pages))
+        book_data = BookWorker.imap_unordered(get_book_details, all_book_pages)
         BookWorker.close()
-        a, b = 0, book_data._index + 1
-        t = len(all_book_pages)
-        while b < t:
-            PBAR.update(b-a)
-            a, b = b, book_data._index + 1
     except Exception as e:
         logging.debug(e)
         logging.info("Trying with single thread")
         book_data = []
-        all_book_pages = list(all_book_pages) if type(all_book_pages) is not list else all_book_pages
+        all_book_pages = tuple(all_book_pages)
         for book_page in all_book_pages:
             PBAR.update(1)
             book_data.append(get_book_details(book_page))
+    
+    a, b = 0, book_data._index + 1
+    t = len(all_book_pages)
+    while b <= t:
+        PBAR.update(b-a)
+        a, b = b, book_data._index + 1
+    
     PBAR.close()
 
     books_updated = []
+    book_data = filter(lambda b: b['title'] is not None, book_data)
     book_data = tuple(book_data)
     t = len(book_data)
-    book_data = filter(lambda b: b['title'] is not None, book_data)
     duplicate_books = []
     PBAR = tqdm.tqdm(total=t, desc=bcolors.blue("updating database"), unit=" book", ascii=True)
     for book in book_data:
