@@ -51,7 +51,7 @@ class SearchForm extends React.Component {
     //   this.setState({value: this.state.suggest})
     //   event.preventDefault()
     // }
-    if(event.key == 'Enter'){
+    if(event.key === 'Enter'){
       event.preventDefault()
       this.handleSubmit(event)
     }
@@ -76,7 +76,7 @@ class SearchForm extends React.Component {
             />
             </div>
           <div className="item" style={{paddingTop: '5px', color: 'gray', fontSize: '14px'}} >Hit Enter to load all results.&nbsp;
-          <a href="https://sqlite.org/fts5.html#full_text_query_syntax" target="_blank">
+          <a href="https://sqlite.org/fts5.html#full_text_query_syntax" target="_blank" rel="noopener noreferrer">
             Query Syntax
           </a>
           </div>

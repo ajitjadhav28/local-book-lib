@@ -17,7 +17,7 @@ class HomePage extends React.Component
     }
 
     handleKeyDown(event){
-        if(event.ctrlKey && event.composed && event.shiftKey && event.key == 'F')
+        if(event.ctrlKey && event.composed && event.shiftKey && event.key === 'F')
             document.getElementById("search-input-box").focus()
     }
 
@@ -78,7 +78,7 @@ class HomePage extends React.Component
                     {
                         this.state.books.map(book =>
                             <BookCard
-                                key={book.isbn == true ? book.isbn : book.url.substring(27, book.url.length)}
+                                key={book.isbn === true ? book.isbn : book.url.substring(27, book.url.length)}
                                 props={{...book}}
                             />
                         )

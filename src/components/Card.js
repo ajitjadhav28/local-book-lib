@@ -3,12 +3,12 @@ import React from 'react'
 function CardDownload(props){
   let data = props.props  
   let data_dict = []
-    if(data.pdf_url != "None")
-      data_dict.push(<a target="_blank"  className="book-link-pdf App-link" href={data.pdf_url}>PDF({(data.pdf_size/(1024*1024)).toFixed(2)}MB)</a>)
-    if(data.epub_url != "None")
-      data_dict.push(<a target="_blank"  className="book-link-epub App-link" href={data.epub_url}>EPUB({(data.epub_size/(1024*1024)).toFixed(2)}MB)</a>)
-    if(data.other_url != "None")
-      data_dict.push(<a target="_blank"  className="book-link-epub App-link" href={data.other_url}>{data.format}({(data.other_size/(1024*1024)).toFixed(2)}MB)</a>)
+    if(data.pdf_url !== "None")
+      data_dict.push(<a target="_blank" rel="noopener noreferrer" className="book-link-pdf App-link" href={data.pdf_url}>PDF({(data.pdf_size/(1024*1024)).toFixed(2)}MB)</a>)
+    if(data.epub_url !== "None")
+      data_dict.push(<a target="_blank" rel="noopener noreferrer" className="book-link-epub App-link" href={data.epub_url}>EPUB({(data.epub_size/(1024*1024)).toFixed(2)}MB)</a>)
+    if(data.other_url !== "None")
+      data_dict.push(<a target="_blank" rel="noopener noreferrer" className="book-link-epub App-link" href={data.other_url}>{data.format}({(data.other_size/(1024*1024)).toFixed(2)}MB)</a>)
     if(data_dict.length > 0){
       return (
         <React.Fragment>
@@ -26,11 +26,11 @@ function CardDownload(props){
     return(
       <div className="book-card">
         <div className="book-card-img">
-            <a target="_blank" href={props.props.url}>
+            <a target="_blank" rel="noopener noreferrer" href={props.props.url}>
             {
                 props.props.image != null
-                ?(<img className="book-card-img-tag" src={"data:image/jpeg;base64,".concat(props.props.image)}/>)
-                :(<img className="book-card-img-tag" src={props.props.image_url}/>)
+                ?(<img alt={props.props.title} className="book-card-img-tag" src={"data:image/jpeg;base64,".concat(props.props.image)}/>)
+                :(<img alt={props.props.title} className="book-card-img-tag" src={props.props.image_url}/>)
             }
             </a>
         </div>

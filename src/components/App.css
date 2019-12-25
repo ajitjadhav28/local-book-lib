@@ -201,9 +201,9 @@ a:visited{
 
 .search-form {
   width: 100%;
-  display: flex;
+  display: inline-grid;
   justify-content: center;
-  flex-flow: row wrap;
+  /* flex-flow: row wrap; */
   font-size: 18px;
   font-family: monospace;
 }
