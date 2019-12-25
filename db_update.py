@@ -347,12 +347,12 @@ def backup(scraping_sitemap: bool = True, procs: int = 10):
         for book_page in all_book_pages:
             PBAR.update(1)
             book_data.append(get_book_details(book_page))
-    
-    a, b = 0, book_data._index + 1
-    t = len(all_book_pages)
-    while b <= t:
-        PBAR.update(b-a)
-        a, b = b, book_data._index + 1
+    else:
+        a, b = 0, book_data._index + 1
+        t = len(all_book_pages)
+        while b <= t:
+            PBAR.update(b-a)
+            a, b = b, book_data._index + 1
     
     PBAR.close()
 
