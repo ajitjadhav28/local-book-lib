@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Fragment } from 'react';
 // import axios from 'axios';
 
 class SearchForm extends React.Component {
@@ -59,6 +59,7 @@ class SearchForm extends React.Component {
 
   render() {
     return (
+      <Fragment>
       <form className="search-form" onSubmit={this.handleSubmit}>
           <div className="editable item">
             <input className="search-input search-suggestion"
@@ -81,6 +82,10 @@ class SearchForm extends React.Component {
           </a>
           </div>
       </form>
+      <div className="item" style={{paddingRight: '20px', color: 'gray', fontSize: '14px', textAlign: "right"}} >
+        Total Books : {this.props.totalBooks}
+      </div>
+      </Fragment>
     );
   }
 }

@@ -10,7 +10,8 @@ class HomePage extends React.Component
         this.state = {
             books: false,
             initialBooks: false,
-            search: ''
+            search: '',
+            totalBooks: ''
         }
         this.handleSearchCallback = this.handleSearchCallback.bind(this)
         this.handleKeyDown = this.handleKeyDown.bind(this)
@@ -25,7 +26,14 @@ class HomePage extends React.Component
         let search = "/programming OR operating system OR algorithm \
                         OR data structures OR science OR network\
                         OR engineering OR hardware OR embedded OR database\
-                        /50"
+                        /48"
+        axios.get('/totalbooks').then(
+            (response) => {
+                this.setState({
+                    totalBooks: response.data[0].count
+                })
+            }
+        )
         axios.post(search).then(
             (response) => {
                 this.setState({
@@ -48,7 +56,7 @@ class HomePage extends React.Component
                 }
             )
         }else if(search_text.length > this.state.search.length) {
-          axios.post("/"+search_text+"/"+ 10).then(
+          axios.post("/"+search_text+"/"+ 12).then(
             (response) => {
                 this.setState({
                     books: response.data ? response.data : []
@@ -72,7 +80,7 @@ class HomePage extends React.Component
         return(
             <React.Fragment>
                 <div className="search-wraper">
-                    <SearchForm callback={this.handleSearchCallback}/>
+                    <SearchForm callback={this.handleSearchCallback} totalBooks={this.state.totalBooks}/>
                 </div>
                 <div className="book-wraper" >
                     {

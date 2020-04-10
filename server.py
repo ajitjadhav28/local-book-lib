@@ -81,6 +81,12 @@ def search_limit(search, limit):
         return jsonify(searc_database(search, search_query_limit))
 
 
+@app.route('/totalbooks', methods=['GET'])
+def total_books():
+    logging.info(bcolors.color('Total books query.', bcolors.lightgrey))
+    if request.method == 'GET':
+        return jsonify(query_databse('{}',"SELECT COUNT(*) AS count FROM books;"))
+
 if __name__ == "__main__":
     if not (os.path.exists(SQL_DB_NAME)):
         logging.critical(bcolors.fail('Database not found. Please create database with "python3 db_update.py db_update".'))
@@ -106,7 +112,7 @@ if __name__ == "__main__":
         conn.executescript(query)
         conn.execute(BOOKS_CREATE_VIRTUAL_TABLE)
         conn.execute('INSERT INTO books_virtual SELECT title,sub_title,author,category,description, \
-            year,format,url FROM books;')
+            year,format,url,isbn FROM books;')
         file_db.close()
     else:
         conn = sqlite3.connect(os.path.abspath(SQL_DB_NAME), check_same_thread=False)

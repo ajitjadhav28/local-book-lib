@@ -64,10 +64,10 @@ format,url, epub_url,epub_size,pdf_url,pdf_size,other_url,other_size,image_url) 
 "{epub_size}","{pdf_url}","{pdf_size}", "{other_url}","{other_size}","{image_url}") """
 
 BOOKS_CREATE_VIRTUAL_TABLE = "CREATE VIRTUAL TABLE IF NOT EXISTS books_virtual USING FTS5(title, sub_title, author, " \
-                             "category, description, year, format, url); "
+                             "category, description, year, format, url, isbn); "
 
-BOOKS_VIRT_INSRT_FRMT = """INSERT INTO books_virtual(title,sub_title,author,category,description,year,format,url)
-VALUES("{title}","{sub_title}","{author}","{category}","{description}","{year}","{format}","{url}") """
+BOOKS_VIRT_INSRT_FRMT = """INSERT INTO books_virtual(title,sub_title,author,category,description,year,format,url,isbn)
+VALUES("{title}","{sub_title}","{author}","{category}","{description}","{year}","{format}","{url}", "{isbn}") """
 
 
 class SqliteConn:
