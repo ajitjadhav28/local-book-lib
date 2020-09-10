@@ -9,6 +9,9 @@ Collects data from allitebooks.org to search and download books faster.
 - python3, sqlite3
 - pathon packages from requirements.txt 
 
+### Run from docker container
+- docker-compose up -d (starts server on port http://localhost:9000)
+
 ### Install
 - Install python3 and sqlite with FTS5 support
 - In system shell cd into local-book-lib and enter `python3 -m pip install -r requirements.txt`
