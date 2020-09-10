@@ -1,0 +1,10 @@
+version: '3.7'
+services:
+  libapp:
+    build: .
+    volumes:
+      - ".:/app"
+    working_dir: "/app"
+    command: bash -c " python db_update.py db_update && python server.py --host 0.0.0.0 -p 9000"
+    ports:
+      - "9000:9000"

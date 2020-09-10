@@ -491,7 +491,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("action", help="Specify action: db_update, img_update")
     parser.add_argument("-w", "--website", action="store_true",
-                        help="Scraps whole website sitemap instead of just books. It may take extra time.")
+                        help="Scraps whole website sitemap instead of just book links from sitemap. It may take extra time.")
     parser.add_argument("-l", "--log", type=str, default='ERROR',
                         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], help="Specify logging levels.")
     parser.add_argument('-j', '--jobs', default=10, type=int, help="No of parallel jobs of worker.")
