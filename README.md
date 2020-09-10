@@ -9,7 +9,7 @@ Collects data from allitebooks.org to search and download books faster.
 - python3, sqlite3
 - pathon packages from requirements.txt 
 
-### Run from docker container
+### Run from docker container (just need docker installed with docker-compose)
 - docker-compose up -d (starts server on port http://localhost:9000)
 
 ### Install
