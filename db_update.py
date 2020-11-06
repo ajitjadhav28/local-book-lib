@@ -10,7 +10,7 @@ from term_colors import bcolors
 from datetime import datetime
 import tqdm
 
-BASE_URL = "http://www.allitebooks.org/sitemap.xml"
+BASE_URL = "http://www.allitebooks.com/sitemap.xml"
 SQL_DB_NAME = "allitebooks.sql"
 
 POSTS_CREATE_TABLE_SQL = """ CREATE TABLE IF NOT EXISTS posts(
@@ -135,7 +135,7 @@ def __extract_loc(url):
 
 def _fetch_only_sitemap(db: SqliteConn, procs: int = 6):
     r = requests.get(BASE_URL, headers=_get_random_header())
-    interested_posts = re.compile('^http?://www.allitebooks.org/post-sitemap[0-9]+.xml$')
+    interested_posts = re.compile('^http?://www.allitebooks.com/post-sitemap[0-9]+.xml$')
     soup = BeautifulSoup(r.content, "lxml")
     all_url = soup.find_all('loc')
     all_posts = []
