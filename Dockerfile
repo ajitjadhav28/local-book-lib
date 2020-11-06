@@ -1,5 +1,7 @@
 FROM python:slim
-RUN apt update && apt install -y sqlite3
+RUN apt update
+RUN apt install -y sqlite3
+RUN apt install -y gcc make python3-lxml 
 # #User with home
 # RUN useradd -m -s /bin/bash booklib
 # USER booklib

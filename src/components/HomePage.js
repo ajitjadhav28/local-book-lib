@@ -47,6 +47,7 @@ class HomePage extends React.Component
 
     handleSearchCallback(search_text, submit){
         if(search_text.length > 0){
+            search_text = encodeURIComponent(search_text)
         if(submit){
             axios.post("/"+search_text).then(
                 (response) => {

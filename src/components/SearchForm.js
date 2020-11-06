@@ -1,5 +1,5 @@
 import React, { Fragment } from 'react';
-// import axios from 'axios';
+import axios from 'axios';
 
 class SearchForm extends React.Component {
   constructor(props) {
@@ -62,11 +62,11 @@ class SearchForm extends React.Component {
       <Fragment>
       <form className="search-form" onSubmit={this.handleSubmit}>
           <div className="editable item">
-            <input className="search-input search-suggestion"
+            {/* <input className="search-input search-suggestion"
               type="text"
               placeholder={this.state.value.length > 2 ? this.state.suggest : ''}
               disabled="True"
-            />
+            /> */}
             <input className="search-input search-main"
               id="search-input-box"
               placeholder="Search Books"

@@ -3,6 +3,7 @@ from db_update import SQL_DB_NAME, BOOKS_CREATE_VIRTUAL_TABLE
 import os, functools, argparse, logging, sqlite3
 from flask_cors import CORS
 from term_colors import bcolors
+import urllib
 
 app = Flask(__name__, template_folder=os.path.abspath('./build'), static_folder=os.path.abspath('./build/static'))
 cors = CORS(app)
@@ -58,6 +59,7 @@ def index():
 @app.route('/<search>', methods=['POST'])
 @functools.lru_cache(maxsize=100)
 def search(search):
+    search = urllib.parse.unquote(search)
     logging.info(bcolors.color('SEARCH: ', bcolors.lightcyan) + search)
     if request.method == 'POST' and len(search) > 0 :
         return jsonify(searc_database(search, search_query))
@@ -65,6 +67,7 @@ def search(search):
 @app.route('/suggest/<search>', methods=['POST'])
 @functools.lru_cache(maxsize=5000)
 def word_completion(search):
+    search = urllib.parse.unquote(search)
     logging.debug('SUGGESTION FOR: ' + search)
     if request.method == 'POST' and len(search) > 0:
         format_query = \
@@ -74,6 +77,7 @@ def word_completion(search):
 @app.route('/<search>/<int:limit>', methods=['POST'])
 @functools.lru_cache(maxsize=500)
 def search_limit(search, limit):
+    search = urllib.parse.unquote(search)
     logging.info(bcolors.color(f'SEARCH({limit}): ', bcolors.lightcyan) + search)
     if request.method == 'POST' and len(search) > 0 and limit > 0:
         search_query_limit = \
