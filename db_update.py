@@ -10,7 +10,7 @@ from term_colors import bcolors
 from datetime import datetime
 import tqdm
 
-BASE_URL = "http://www.allitebooks.com/sitemap.xml"
+BASE_URL = "http://www.allitebooks.com/sitemap_index.xml"
 SQL_DB_NAME = "allitebooks.sql"
 
 POSTS_CREATE_TABLE_SQL = """ CREATE TABLE IF NOT EXISTS posts(
